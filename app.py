@@ -38,6 +38,11 @@ CLEANUP_INTERVAL = 300  # 5 minutes in seconds
 AUDIO_DIR = os.path.join(current_dir, "static", "audio")
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
+# Vercel-specific configuration
+if os.environ.get("VERCEL"):
+    app.config['SERVER_NAME'] = os.environ.get("VERCEL_URL", "localhost:8080")
+    app.config['PREFERRED_URL_SCHEME'] = 'https'
+
 def get_ip_addresses():
     """Get local and network IP addresses"""
     try:
