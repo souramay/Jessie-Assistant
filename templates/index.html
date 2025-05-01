@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jessie Voice Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="description" content="An intelligent voice assistant with a modern interface">
+</head>
+<body>
+    <div class="ambient-background">
+        <div class="particles"></div>
+    </div>
+
+    <div class="container">
+        <div class="dynamic-text-panel" id="text-panel">
+            <div class="message bot">
+                <div class="message-content">
+                    <p>Hello! I'm Jessie. How can I help you today?</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="voice-wave-container">
+            <div class="voice-wave" id="voice-wave">
+                <div class="wave">
+                    <div class="wave-line-1"></div>
+                    <div class="wave-line-2"></div>
+                    <div class="wave-line-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hybrid-input-section">
+            <div class="input-container">
+                <input type="text" id="user-input" placeholder="Type your message...">
+                <div class="input-buttons">
+                    <button id="mic-button" class="mic-button">
+                        <i class="fas fa-microphone"></i>
+                        <span id="mic-status" class="mic-status">Microphone ready</span>
+                    </button>
+                    <button id="send-button" class="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 

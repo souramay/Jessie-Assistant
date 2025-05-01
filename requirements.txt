@@ -1,0 +1,8 @@
+Flask==3.0.2
+python-dotenv==1.0.1
+pywhatkit==5.4
+openai==1.12.0
+gTTS==2.5.1
+SpeechRecognition==3.10.1
+pydub==0.25.1
+pyOpenSSL==25.0.0

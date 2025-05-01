@@ -1,0 +1,619 @@
+:root {
+    --primary-gradient: linear-gradient(135deg, #2E3192, #1BFFFF);
+    --accent-cyan: #00E5FF;
+    --accent-pink: #FF4081;
+    --text-color: #ffffff;
+    --text-color-dark: #333333;
+    --panel-bg: rgba(0, 0, 0, 0.4);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #ffffff;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow: hidden;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Ambient Background */
+.ambient-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--primary-gradient);
+    z-index: -1;
+}
+
+.particles {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    animation: float 20s linear infinite;
+}
+
+@keyframes float {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-20px); }
+}
+
+/* Container */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Dynamic Text Panel */
+.dynamic-text-panel {
+    background: var(--panel-bg);
+    border-radius: 20px;
+    padding: 25px;
+    margin: 20px 0;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    position: relative;
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.dynamic-text-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dynamic-text-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dynamic-text-panel::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+/* Message Content */
+.message-content {
+    padding: 15px 20px;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.2),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.message-content p {
+    margin: 0;
+    line-height: 1.6;
+    font-size: 1.1em;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    font-weight: 400;
+}
+
+.message.bot .message-content {
+    background: rgba(0, 229, 255, 0.2);
+    border-left: 3px solid var(--accent-cyan);
+}
+
+.message.user .message-content {
+    background: rgba(255, 255, 255, 0.2);
+    border-right: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.message.system .message-content {
+    background: rgba(255, 64, 129, 0.2);
+    border-left: 3px solid var(--accent-pink);
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 15px;
+    background: rgba(0, 229, 255, 0.2);
+    border-radius: 15px;
+    width: fit-content;
+    margin: 10px 0;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    background: #00E5FF;
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite ease-in-out;
+    box-shadow: 0 0 5px rgba(0, 229, 255, 0.5);
+}
+
+/* Input Field */
+input[type="text"] {
+    flex: 1;
+    padding: 12px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+    font-size: 1em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(0, 229, 255, 0.4);
+    box-shadow: 
+        0 0 10px rgba(0, 229, 255, 0.2),
+        0 0 20px rgba(0, 229, 255, 0.1);
+}
+
+input[type="text"]::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+    text-shadow: none;
+}
+
+/* Update message animations */
+@keyframes messageAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes messagePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.message.new {
+    animation: messagePulse 0.3s ease-out;
+}
+
+/* Voice Wave Visualization */
+.voice-wave-container {
+    width: 100%;
+    max-width: 400px;
+    height: 120px;
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voice-wave {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wave {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Base wave lines with variable thickness */
+.wave::before,
+.wave::after,
+.wave .wave-line-1,
+.wave .wave-line-2,
+.wave .wave-line-3 {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: var(--accent-cyan);
+    border-radius: 2px;
+    box-shadow: 0 0 10px var(--accent-cyan);
+    animation: ambientWave 2s ease-in-out infinite;
+    transform-origin: center;
+}
+
+/* Primary wave line (brighter core) */
+.wave::before {
+    top: 30%;
+    height: 3px;
+    background: #00E5FF;
+    box-shadow: 0 0 15px #00E5FF;
+    animation: ambientWave 2s ease-in-out infinite 0.5s;
+}
+
+/* Secondary wave line (translucent trail) */
+.wave::after {
+    top: 70%;
+    height: 1.5px;
+    opacity: 0.6;
+    animation: ambientWave 2s ease-in-out infinite 1s;
+}
+
+/* Additional wave lines for depth */
+.wave .wave-line-1 {
+    top: 20%;
+    height: 1.5px;
+    opacity: 0.4;
+    animation: ambientWave 2s ease-in-out infinite 0.25s;
+}
+
+.wave .wave-line-2 {
+    top: 50%;
+    height: 2px;
+    opacity: 0.5;
+    animation: ambientWave 2s ease-in-out infinite 0.75s;
+}
+
+.wave .wave-line-3 {
+    top: 80%;
+    height: 1.5px;
+    opacity: 0.4;
+    animation: ambientWave 2s ease-in-out infinite 1.25s;
+}
+
+/* Ambient state animation (idle) */
+@keyframes ambientWave {
+    0% { 
+        transform: scaleX(0.8) translateY(0) rotate(0deg);
+        opacity: 0.3;
+    }
+    25% { 
+        transform: scaleX(1.2) translateY(-5px) rotate(2deg);
+        opacity: 0.7;
+    }
+    50% { 
+        transform: scaleX(0.9) translateY(0) rotate(-1deg);
+        opacity: 1;
+    }
+    75% { 
+        transform: scaleX(1.1) translateY(5px) rotate(1deg);
+        opacity: 0.7;
+    }
+    100% { 
+        transform: scaleX(0.8) translateY(0) rotate(0deg);
+        opacity: 0.3;
+    }
+}
+
+/* Active state (listening) */
+.voice-wave.active .wave::before,
+.voice-wave.active .wave::after,
+.voice-wave.active .wave .wave-line-1,
+.voice-wave.active .wave .wave-line-2,
+.voice-wave.active .wave .wave-line-3 {
+    animation: activeWave 0.5s ease-in-out infinite;
+    opacity: 1;
+    box-shadow: 0 0 15px var(--accent-cyan);
+}
+
+@keyframes activeWave {
+    0% { 
+        transform: scaleX(0.9) translateY(0) rotate(0deg);
+        opacity: 0.6;
+    }
+    25% { 
+        transform: scaleX(1.4) translateY(-10px) rotate(5deg);
+        opacity: 1;
+    }
+    50% { 
+        transform: scaleX(1.1) translateY(0) rotate(-3deg);
+        opacity: 0.8;
+    }
+    75% { 
+        transform: scaleX(1.3) translateY(10px) rotate(3deg);
+        opacity: 1;
+    }
+    100% { 
+        transform: scaleX(0.9) translateY(0) rotate(0deg);
+        opacity: 0.6;
+    }
+}
+
+/* Processing state */
+.voice-wave.processing .wave::before,
+.voice-wave.processing .wave::after,
+.voice-wave.processing .wave .wave-line-1,
+.voice-wave.processing .wave .wave-line-2,
+.voice-wave.processing .wave .wave-line-3 {
+    animation: processingWave 1s ease-in-out infinite;
+    opacity: 0.8;
+    box-shadow: 0 0 12px var(--accent-cyan);
+}
+
+@keyframes processingWave {
+    0% { 
+        transform: scaleX(0.95) translateY(0) rotate(0deg);
+        opacity: 0.6;
+    }
+    50% { 
+        transform: scaleX(1.15) translateY(-5px) rotate(2deg);
+        opacity: 1;
+    }
+    100% { 
+        transform: scaleX(0.95) translateY(0) rotate(0deg);
+        opacity: 0.6;
+    }
+}
+
+/* Error state */
+.voice-wave.error .wave::before,
+.voice-wave.error .wave::after,
+.voice-wave.error .wave .wave-line-1,
+.voice-wave.error .wave .wave-line-2,
+.voice-wave.error .wave .wave-line-3 {
+    animation: errorWave 0.3s ease-in-out;
+    background: #FF1744;
+    box-shadow: 0 0 15px #FF1744;
+}
+
+@keyframes errorWave {
+    0% { transform: scaleX(1) rotate(0deg); opacity: 0.3; }
+    50% { transform: scaleX(1.2) rotate(5deg); opacity: 1; }
+    100% { transform: scaleX(1) rotate(0deg); opacity: 0.3; }
+}
+
+/* Giggle state */
+.voice-wave.giggle .wave::before,
+.voice-wave.giggle .wave::after,
+.voice-wave.giggle .wave .wave-line-1,
+.voice-wave.giggle .wave .wave-line-2,
+.voice-wave.giggle .wave .wave-line-3 {
+    animation: giggleWave 0.3s ease-in-out;
+    opacity: 1;
+    box-shadow: 0 0 15px var(--accent-cyan);
+}
+
+@keyframes giggleWave {
+    0% { 
+        transform: scaleX(1) translateY(0) rotate(0deg);
+    }
+    25% { 
+        transform: scaleX(1.2) translateY(-15px) rotate(8deg);
+    }
+    50% { 
+        transform: scaleX(0.8) translateY(10px) rotate(-8deg);
+    }
+    75% { 
+        transform: scaleX(1.1) translateY(-5px) rotate(4deg);
+    }
+    100% { 
+        transform: scaleX(1) translateY(0) rotate(0deg);
+    }
+}
+
+/* Add a subtle bounce effect after giggle */
+@keyframes bounceWave {
+    0% { transform: scaleX(1) translateY(0); }
+    50% { transform: scaleX(1.05) translateY(-5px); }
+    100% { transform: scaleX(1) translateY(0); }
+}
+
+.voice-wave.bounce .wave::before,
+.voice-wave.bounce .wave::after,
+.voice-wave.bounce .wave .wave-line-1,
+.voice-wave.bounce .wave .wave-line-2,
+.voice-wave.bounce .wave .wave-line-3 {
+    animation: bounceWave 0.5s ease-in-out;
+}
+
+/* Hybrid Input Section */
+.hybrid-input-section {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.mic-button {
+    position: relative;
+    background: var(--accent-cyan);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mic-button i {
+    color: white;
+    font-size: 1.2rem;
+}
+
+.mic-button.active {
+    background: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.mic-button.error {
+    background: #ff4444;
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+}
+
+.mic-button.inactive {
+    background: #666;
+    opacity: 0.8;
+}
+
+.mic-status {
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    color: var(--text-color);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mic-button:hover .mic-status {
+    opacity: 1;
+}
+
+.mic-status.active {
+    color: var(--accent-cyan);
+}
+
+.mic-status.error {
+    color: #ff4444;
+}
+
+.mic-status.inactive {
+    color: #666;
+}
+
+.mic-pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--accent-pink);
+    opacity: 0;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 0.2; }
+    100% { transform: scale(1); opacity: 0.5; }
+}
+
+.keyboard-toggle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.keyboard-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.keyboard-toggle i {
+    color: white;
+    font-size: 1.2em;
+}
+
+.keyboard-container {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.keyboard-container.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    transform: scale(1.1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .dynamic-text-panel {
+        margin: 10px 0;
+    }
+    
+    .mic-button {
+        width: 60px;
+        height: 60px;
+    }
+    
+    input[type="text"] {
+        padding: 12px 15px;
+    }
+    
+    .voice-wave-container {
+        height: 80px;
+    }
+    
+    .wave::before,
+    .wave::after,
+    .wave .wave-line-1,
+    .wave .wave-line-2,
+    .wave .wave-line-3 {
+        height: 1.5px;
+        box-shadow: 0 0 8px var(--accent-cyan);
+    }
+} 
