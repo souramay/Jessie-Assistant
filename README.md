@@ -45,6 +45,69 @@ python app.py
 
 6. Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:8080`)
 
+## Deployment to Render
+
+### Prerequisites
+1. Create a Render account at [render.com](https://render.com)
+2. Install the Render CLI (optional):
+   ```bash
+   npm install -g render-cli
+   ```
+
+### Deployment Steps
+
+1. **Push your code to a Git repository** (GitHub, GitLab, or Bitbucket)
+
+2. **Create a new Web Service on Render**
+   - Go to your Render dashboard
+   - Click "New +" and select "Web Service"
+   - Connect your repository
+   - Configure the service:
+     - Name: rude-ai-assistant
+     - Environment: Python
+     - Build Command: `pip install -r requirements.txt`
+     - Start Command: `gunicorn app:app`
+     - Add environment variable:
+       - Key: `GOOGLE_API_KEY`
+       - Value: Your Google API key
+
+3. **Deploy**
+   - Click "Create Web Service"
+   - Render will automatically build and deploy your application
+
+### Environment Variables
+Make sure to set these environment variables in your Render dashboard:
+- `GOOGLE_API_KEY`: Your Google API key for AI services
+
+### Project Structure
+```
+.
+├── app.py              # Main Flask application
+├── render.yaml         # Render configuration
+├── requirements.txt    # Python dependencies
+├── static/            # Static files (CSS, JS, images)
+│   ├── css/
+│   ├── js/
+│   └── images/
+└── templates/         # HTML templates
+```
+
+### Troubleshooting
+
+1. **If deployment fails:**
+   - Check the Render logs
+   - Ensure all dependencies are in requirements.txt
+   - Verify environment variables are set correctly
+
+2. **If static files aren't loading:**
+   - Check the file paths in your templates
+   - Ensure static files are properly referenced
+
+3. **If Python backend isn't working:**
+   - Check Python version compatibility
+   - Verify all required packages are installed
+   - Check environment variables
+
 ## Voice Commands
 
 - "Play [song name]" - Plays the requested song on YouTube
