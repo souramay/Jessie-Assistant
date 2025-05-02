@@ -8,20 +8,19 @@
   ],
   "routes": [
     {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "app.py"
     }
   ],
   "env": {
-    "PYTHONPATH": ".",
-    "FLASK_APP": "app.py",
-    "FLASK_ENV": "production"
+    "PYTHONUNBUFFERED": "1"
   },
-  "build": {
-    "env": {
-      "PYTHONPATH": ".",
-      "FLASK_APP": "app.py",
-      "FLASK_ENV": "production"
-    }
+  "regions": ["sfo1"],
+  "github": {
+    "silent": true
   }
 } 
