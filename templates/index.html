@@ -14,6 +14,11 @@
     </div>
 
     <div class="container">
+        <div class="suggestion-container" id="suggestion-container">
+            <div class="suggestion"></div>
+            <div class="suggestion"></div>
+            <div class="suggestion"></div>
+        </div>
         <div class="dynamic-text-panel" id="text-panel">
             <div class="message bot">
                 <div class="message-content">
@@ -48,6 +53,7 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='js/audio-enhancer.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
-</html> 
+</html>

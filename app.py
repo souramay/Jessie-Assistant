@@ -6,8 +6,6 @@ import time
 import socket
 import logging
 import sys
-import pywhatkit
-import subprocess
 
 from dotenv import load_dotenv
 
@@ -15,10 +13,14 @@ from dotenv import load_dotenv
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
+# Production configuration
+port = int(os.environ.get('PORT', 8000))
+host = '0.0.0.0'
+
 # Import application modules
-from module.voice import speak, cleanup_old_audio_files
+from module.voice import speak, cleanup_old_audio_files, speak_sync
 from module.chat import start_conversation, get_response
-from module.music import play_music
+from module.music import play_music_sync
 
 # Load environment variables
 load_dotenv()
@@ -37,11 +39,6 @@ CLEANUP_INTERVAL = 300  # 5 minutes in seconds
 # Create audio directory if it doesn't exist
 AUDIO_DIR = os.path.join(current_dir, "static", "audio")
 os.makedirs(AUDIO_DIR, exist_ok=True)
-
-# Vercel-specific configuration
-if os.environ.get("VERCEL"):
-    app.config['SERVER_NAME'] = os.environ.get("VERCEL_URL", "localhost:8080")
-    app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 def get_ip_addresses():
     """Get local and network IP addresses"""
@@ -99,6 +96,18 @@ def perform_cleanup():
         except Exception as e:
             logger.error(f"Error during automatic cleanup: {e}")
 
+def speak_sync(text):
+    """Synchronous wrapper for speak function"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(speak(text))
+        loop.close()
+        return result
+    except Exception as e:
+        logger.error(f"Error in speak_sync: {e}")
+        return None
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -117,28 +126,81 @@ def send_message():
         if not message:
             return jsonify({'error': 'Empty message'}), 400
         
-        # Check if it's a music command
-        if any(keyword in message.lower() for keyword in ['play', 'music', 'song']):
-            try:
-                # Extract song name from the command
-                song_name = message.replace('play', '').replace('music', '').replace('song', '').strip()
-                if song_name:
-                    # Create a direct YouTube search URL
-                    search_url = f"https://www.youtube.com/results?search_query={song_name.replace(' ', '+')}"
-                    return jsonify({
-                        'response': f"Click here to play {song_name}: {search_url}",
-                        'is_link': True,
-                        'link': search_url
-                    })
-            except Exception as e:
-                logger.error(f"Error handling music request: {e}")
-                return jsonify({'response': "Sorry, I couldn't handle that music request right now."})
-        
         # Initialize chat if not already done
         global chat
         if not chat:
             if not initialize_chat():
                 return jsonify({'error': 'Chat not initialized', 'response': "Fuck, I can't connect to my brain right now. Check the API key, yaar!"}), 500
+        
+        # Check if it's a music command
+        if any(keyword in message.lower() for keyword in ['play', 'music', 'song']):
+            try:
+                # Use the sync wrapper to handle the async function
+                result = play_music_sync(message)
+                if result:
+                    # Generate voice response
+                    voice_response = f"Playing {result} for fuck's sake"
+                    audio_result = speak_sync(voice_response)
+                    
+                    if audio_result and isinstance(audio_result, dict):
+                        # Save audio file
+                        filename = audio_result.get("filename")
+                        content = audio_result.get("content")
+                        
+                        if filename and content:
+                            audio_path = os.path.join(AUDIO_DIR, filename)
+                            with open(audio_path, 'wb') as f:
+                                f.write(content)
+                            
+                            return jsonify({
+                                'response': voice_response,
+                                'audio': f'/static/audio/{filename}',
+                                'song': result
+                            })
+                    
+                    return jsonify({
+                        'response': voice_response,
+                        'song': result
+                    })
+                else:
+                    error_response = "Fuck, I couldn't find that song. Try another one?"
+                    audio_result = speak_sync(error_response)
+                    
+                    if audio_result and isinstance(audio_result, dict):
+                        filename = audio_result.get("filename")
+                        content = audio_result.get("content")
+                        
+                        if filename and content:
+                            audio_path = os.path.join(AUDIO_DIR, filename)
+                            with open(audio_path, 'wb') as f:
+                                f.write(content)
+                            
+                            return jsonify({
+                                'response': error_response,
+                                'audio': f'/static/audio/{filename}'
+                            })
+                    
+                    return jsonify({'response': error_response})
+            except Exception as e:
+                logger.error(f"Error playing music: {e}")
+                error_response = "Fuck, I can't play that music right now."
+                audio_result = speak_sync(error_response)
+                
+                if audio_result and isinstance(audio_result, dict):
+                    filename = audio_result.get("filename")
+                    content = audio_result.get("content")
+                    
+                    if filename and content:
+                        audio_path = os.path.join(AUDIO_DIR, filename)
+                        with open(audio_path, 'wb') as f:
+                            f.write(content)
+                        
+                        return jsonify({
+                            'response': error_response,
+                            'audio': f'/static/audio/{filename}'
+                        })
+                
+                return jsonify({'response': error_response})
         
         # Get chat response
         try:
@@ -152,7 +214,7 @@ def send_message():
         
         # Generate speech
         try:
-            audio_result = asyncio.run(speak(response))
+            audio_result = speak_sync(response)
             
             if audio_result and isinstance(audio_result, dict):
                 # Save audio file to static directory for proper serving
@@ -214,27 +276,6 @@ def listen():
         text = voice_listen()
         
         if text:
-            # Check if it's a music command
-            if any(keyword in text.lower() for keyword in ['play', 'music', 'song']):
-                try:
-                    # Extract song name from the command
-                    song_name = text.replace('play', '').replace('music', '').replace('song', '').strip()
-                    if song_name:
-                        # Create a direct YouTube search URL
-                        search_url = f"https://www.youtube.com/results?search_query={song_name.replace(' ', '+')}"
-                        return jsonify({
-                            'text': text,
-                            'response': f"Click here to play {song_name}: {search_url}",
-                            'is_link': True,
-                            'link': search_url
-                        })
-                except Exception as e:
-                    logger.error(f"Error handling music request: {e}")
-                    return jsonify({
-                        'text': text,
-                        'response': "Sorry, I couldn't handle that music request right now."
-                    })
-
             # Process the recognized text
             global chat
             if not chat:
@@ -257,7 +298,7 @@ def listen():
             
             # Generate speech
             try:
-                audio_result = asyncio.run(speak(response))
+                audio_result = speak_sync(response)
                 
                 if audio_result and isinstance(audio_result, dict):
                     # Save audio file to static directory
@@ -305,13 +346,11 @@ def listen():
 if __name__ == '__main__':
     # Get IP addresses
     ip_addresses = get_ip_addresses()
-    port = int(os.environ.get("PORT", 8080))
-    host = os.environ.get("HOST", "0.0.0.0")  # Use 0.0.0.0 to allow external connections
     
     print("\n" + "="*50)
     print("🎤 Jessie Voice Assistant is starting up...")
-    print(f"🔒 HTTPS URL: https://localhost:{port}")
-    print(f"🔒 HTTPS Network URL: https://{ip_addresses['network']}:{port}")
+    print(f"🌐 Local URL: http://localhost:{port}")
+    print(f"🌐 Local Network URL: http://{ip_addresses['network']}:{port}")
     print("="*50 + "\n")
     
     # Initialize chat
@@ -320,14 +359,10 @@ if __name__ == '__main__':
     # Set debug mode from environment variable (default to False for production)
     debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
     
-    # Configure SSL context
-    ssl_context = ('ssl/cert.pem', 'ssl/key.pem')
-    
-    # Run the application with SSL
+    # Run the application
     app.run(
         host=host,
         port=port,
         debug=debug_mode,
-        threaded=True,
-        ssl_context=ssl_context
+        threaded=True
     )

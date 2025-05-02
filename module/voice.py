@@ -4,6 +4,7 @@ import random
 import time
 import logging
 import io
+import asyncio
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -359,6 +360,19 @@ async def speak(text):
 
     except Exception as e:
         logger.error(f"Text-to-speech error: {e}")
+        return None
+
+def speak_sync(text):
+    """Synchronous wrapper for speak function"""
+    try:
+        # Create a new event loop if one doesn't exist
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(speak(text))
+        loop.close()
+        return result
+    except Exception as e:
+        logger.error(f"Error in speak_sync: {e}")
         return None
 
 def cleanup_old_audio_files():
