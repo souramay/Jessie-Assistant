@@ -25,12 +25,23 @@ from module.music import play_music_sync
 # Load environment variables
 load_dotenv()
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize Flask app
 app = Flask(__name__)
-chat = None
+
+# Configure app
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['UPLOAD_FOLDER'] = os.path.join(current_dir, 'static', 'audio')
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Initialize chat at startup
+chat = start_conversation()
 
 # Track last cleanup time
 last_cleanup_time = 0

@@ -1,15 +1,15 @@
-# Rude AI Assistant 💅
+# Rude AI Assistant
 
 A sarcastic emo teenage AI assistant with attitude. This Flask web application features a voice-interactive chatbot that responds with the personality of a moody teenage girl.
 
 ## Features
 
-- 🎤 Voice recognition for hands-free interaction
-- 🗣️ Text-to-speech responses with sassy teen voice
-- 🎵 Music playback integration ("play [song name]")
-- 💬 Persistent chat interface
-- 📱 Mobile-friendly responsive design
-- 😒 Consistently rude and sarcastic personality
+- Voice recognition for hands-free interaction
+- Text-to-speech responses with sassy teen voice
+- Music playback integration ("play [song name]")
+- Persistent chat interface
+- Mobile-friendly responsive design
+- Consistently rude and sarcastic personality
 
 ## Setup Instructions
 
@@ -43,7 +43,42 @@ set GOOGLE_API_KEY=your_api_key_here
 python app.py
 ```
 
-6. Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:8080`)
+6. Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:8000`)
+
+## Deployment to Render
+
+### Prerequisites
+1. Create a Render account at [render.com](https://render.com)
+2. Install the Render CLI (optional):
+   ```bash
+   npm install -g render-cli
+   ```
+
+### Deployment Steps
+
+1. **Push your code to a Git repository** (GitHub, GitLab, or Bitbucket)
+
+2. **Create a new Web Service on Render**
+   - Go to your Render dashboard
+   - Click "New +" and select "Web Service"
+   - Connect your repository
+   - Configure the service:
+     - Name: jessie-chat
+     - Environment: Python
+     - Build Command: `pip install -r requirements.txt`
+     - Start Command: `gunicorn app:app`
+     - Add environment variable:
+       - Key: `GOOGLE_API_KEY`
+       - Value: Your Google API key
+
+3. **Deploy**
+   - Click "Create Web Service"
+   - Render will automatically build and deploy your application
+
+### Environment Variables
+Make sure to set these environment variables in your Render dashboard:
+- `GOOGLE_API_KEY`: Your Google API key for AI services
+- `PORT`: 8000 (default)
 
 ## Voice Commands
 
@@ -56,7 +91,7 @@ python app.py
 ```
 .
 ├── app.py              # Main Flask application
-├── main.py             # Command-line interface version
+├── render.yaml         # Render configuration
 ├── module/             # Core modules
 │   ├── chat.py         # AI conversation handler
 │   ├── music.py        # Music playback functionality
@@ -71,7 +106,7 @@ python app.py
 │   └── index.html
 ├── .env                # Environment variables (create this file)
 ├── requirements.txt    # Python dependencies
-└── README.md           # This file
+└── README.md          # This file
 ```
 
 ## Obtaining a Google Gemini API Key
@@ -99,20 +134,18 @@ python app.py
 - Speakers (for audio output)
 - Google Gemini API key
 
-## License
+## Troubleshooting
 
-This project is open source and available under the MIT License.
+1. **If deployment fails:**
+   - Check the Render logs
+   - Ensure all dependencies are in requirements.txt
+   - Verify environment variables are set correctly
 
-## Deployment
+2. **If static files aren't loading:**
+   - Check the file paths in your templates
+   - Ensure static files are properly referenced
 
-### Deploying to Render
-
-1. Create a new Web Service on Render
-2. Connect your GitHub repository
-3. Configure the following settings:
-   - Environment: Python
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `gunicorn app:app`
-4. Add your environment variables:
-   - `GOOGLE_API_KEY`: Your Google Gemini API key
-5. Deploy!
+3. **If Python backend isn't working:**
+   - Check Python version compatibility
+   - Verify all required packages are installed
+   - Check environment variables
