@@ -42,7 +42,7 @@ set GOOGLE_API_KEY=your_api_key_here
 python app.py
 ```
 
-6. Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:8000`)
+6. Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:8080`)
 
 ## Deployment to Render
 
@@ -77,7 +77,7 @@ python app.py
 ### Environment Variables
 Make sure to set these environment variables in your Render dashboard:
 - `GOOGLE_API_KEY`: Your Google API key for AI services
-- `PORT`: 8000 (default)
+- `PORT`: 8080 (default)
 
 ## Voice Commands
 

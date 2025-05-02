@@ -14,7 +14,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
 # Production configuration
-port = int(os.environ.get('PORT', 8000))
+port = int(os.environ.get('PORT', 8080))
 host = '0.0.0.0'
 
 # Import application modules
