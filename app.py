@@ -6,6 +6,7 @@ import time
 import socket
 import logging
 import sys
+import traceback
 
 from dotenv import load_dotenv
 
@@ -13,20 +14,31 @@ from dotenv import load_dotenv
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Production configuration
 port = int(os.environ.get('PORT', 8080))
 host = '0.0.0.0'
 
-# Import application modules
-from module.voice import speak, cleanup_old_audio_files, speak_sync
-from module.chat import start_conversation, get_response
+logger.info(f"Starting application with port: {port} and host: {host}")
+
+try:
+    # Import application modules
+    from module.voice import speak, cleanup_old_audio_files, speak_sync
+    from module.chat import start_conversation, get_response
+    logger.info("Successfully imported application modules")
+except Exception as e:
+    logger.error(f"Error importing modules: {e}")
+    logger.error(traceback.format_exc())
+    raise
 
 # Load environment variables
 load_dotenv()
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -40,7 +52,13 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize chat at startup
-chat = start_conversation()
+try:
+    chat = start_conversation()
+    logger.info("Successfully initialized chat")
+except Exception as e:
+    logger.error(f"Error initializing chat: {e}")
+    logger.error(traceback.format_exc())
+    chat = None
 
 # Track last cleanup time
 last_cleanup_time = 0
@@ -120,7 +138,13 @@ def speak_sync(text):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    try:
+        logger.info("Serving index page")
+        return render_template('index.html')
+    except Exception as e:
+        logger.error(f"Error serving index page: {e}")
+        logger.error(traceback.format_exc())
+        return "Error loading page", 500
 
 @app.route('/api/send_message', methods=['POST'])
 def send_message():
