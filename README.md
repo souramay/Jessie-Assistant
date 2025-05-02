@@ -6,7 +6,6 @@ A sarcastic emo teenage AI assistant with attitude. This Flask web application f
 
 - Voice recognition for hands-free interaction
 - Text-to-speech responses with sassy teen voice
-- Music playback integration ("play [song name]")
 - Persistent chat interface
 - Mobile-friendly responsive design
 - Consistently rude and sarcastic personality
@@ -82,8 +81,6 @@ Make sure to set these environment variables in your Render dashboard:
 
 ## Voice Commands
 
-- "Play [song name]" - Plays the requested song on YouTube
-- "Play music" or "Recommend a song" - Plays a random song recommendation
 - "Exit" or "Quit" or "Stop" - Closes the application
 
 ## Project Structure

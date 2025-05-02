@@ -20,7 +20,6 @@ host = '0.0.0.0'
 # Import application modules
 from module.voice import speak, cleanup_old_audio_files, speak_sync
 from module.chat import start_conversation, get_response
-from module.music import play_music_sync
 
 # Load environment variables
 load_dotenv()
@@ -142,76 +141,6 @@ def send_message():
         if not chat:
             if not initialize_chat():
                 return jsonify({'error': 'Chat not initialized', 'response': "Fuck, I can't connect to my brain right now. Check the API key, yaar!"}), 500
-        
-        # Check if it's a music command
-        if any(keyword in message.lower() for keyword in ['play', 'music', 'song']):
-            try:
-                # Use the sync wrapper to handle the async function
-                result = play_music_sync(message)
-                if result:
-                    # Generate voice response
-                    voice_response = f"Playing {result} for fuck's sake"
-                    audio_result = speak_sync(voice_response)
-                    
-                    if audio_result and isinstance(audio_result, dict):
-                        # Save audio file
-                        filename = audio_result.get("filename")
-                        content = audio_result.get("content")
-                        
-                        if filename and content:
-                            audio_path = os.path.join(AUDIO_DIR, filename)
-                            with open(audio_path, 'wb') as f:
-                                f.write(content)
-                            
-                            return jsonify({
-                                'response': voice_response,
-                                'audio': f'/static/audio/{filename}',
-                                'song': result
-                            })
-                    
-                    return jsonify({
-                        'response': voice_response,
-                        'song': result
-                    })
-                else:
-                    error_response = "Fuck, I couldn't find that song. Try another one?"
-                    audio_result = speak_sync(error_response)
-                    
-                    if audio_result and isinstance(audio_result, dict):
-                        filename = audio_result.get("filename")
-                        content = audio_result.get("content")
-                        
-                        if filename and content:
-                            audio_path = os.path.join(AUDIO_DIR, filename)
-                            with open(audio_path, 'wb') as f:
-                                f.write(content)
-                            
-                            return jsonify({
-                                'response': error_response,
-                                'audio': f'/static/audio/{filename}'
-                            })
-                    
-                    return jsonify({'response': error_response})
-            except Exception as e:
-                logger.error(f"Error playing music: {e}")
-                error_response = "Fuck, I can't play that music right now."
-                audio_result = speak_sync(error_response)
-                
-                if audio_result and isinstance(audio_result, dict):
-                    filename = audio_result.get("filename")
-                    content = audio_result.get("content")
-                    
-                    if filename and content:
-                        audio_path = os.path.join(AUDIO_DIR, filename)
-                        with open(audio_path, 'wb') as f:
-                            f.write(content)
-                        
-                        return jsonify({
-                            'response': error_response,
-                            'audio': f'/static/audio/{filename}'
-                        })
-                
-                return jsonify({'response': error_response})
         
         # Get chat response
         try:
