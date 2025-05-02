@@ -123,7 +123,7 @@ Make sure to set these environment variables in your Railway dashboard:
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.11+
 - Internet connection (for AI features)
 - Microphone (for voice commands)
 - Speakers (for audio output)
