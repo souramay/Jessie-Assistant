@@ -44,38 +44,37 @@ python app.py
 
 6. Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:8080`)
 
-## Deployment to Render
+## Deployment to Railway
 
 ### Prerequisites
-1. Create a Render account at [render.com](https://render.com)
-2. Install the Render CLI (optional):
+1. Create a Railway account at [railway.app](https://railway.app)
+2. Install the Railway CLI (optional):
    ```bash
-   npm install -g render-cli
+   npm i -g @railway/cli
    ```
 
 ### Deployment Steps
 
 1. **Push your code to a Git repository** (GitHub, GitLab, or Bitbucket)
 
-2. **Create a new Web Service on Render**
-   - Go to your Render dashboard
-   - Click "New +" and select "Web Service"
-   - Connect your repository
-   - Configure the service:
-     - Name: jessie-chat
-     - Environment: Python
-     - Build Command: `pip install -r requirements.txt`
-     - Start Command: `gunicorn app:app`
-     - Add environment variable:
-       - Key: `GOOGLE_API_KEY`
-       - Value: Your Google API key
+2. **Create a new project on Railway**
+   - Go to your Railway dashboard
+   - Click "New Project"
+   - Select "Deploy from GitHub repo"
+   - Choose your repository
 
-3. **Deploy**
-   - Click "Create Web Service"
-   - Render will automatically build and deploy your application
+3. **Configure the project**
+   - Railway will automatically detect the Python project
+   - Add environment variables:
+     - `GOOGLE_API_KEY`: Your Google API key
+     - `PORT`: 8080
+
+4. **Deploy**
+   - Railway will automatically build and deploy your application
+   - You'll get a URL where your app is accessible
 
 ### Environment Variables
-Make sure to set these environment variables in your Render dashboard:
+Make sure to set these environment variables in your Railway dashboard:
 - `GOOGLE_API_KEY`: Your Google API key for AI services
 - `PORT`: 8080 (default)
 
@@ -88,22 +87,22 @@ Make sure to set these environment variables in your Render dashboard:
 ```
 .
 ├── app.py              # Main Flask application
-├── render.yaml         # Render configuration
-├── module/             # Core modules
-│   ├── chat.py         # AI conversation handler
-│   ├── music.py        # Music playback functionality
-│   └── voice.py        # Speech recognition and synthesis
-├── static/             # Static files
-│   ├── audio/          # Generated speech files
-│   ├── css/            # CSS styles
+├── Procfile           # Railway configuration
+├── module/            # Core modules
+│   ├── chat.py        # AI conversation handler
+│   ├── music.py       # Music playback functionality
+│   └── voice.py       # Speech recognition and synthesis
+├── static/            # Static files
+│   ├── audio/         # Generated speech files
+│   ├── css/           # CSS styles
 │   │   └── style.css
-│   └── js/             # JavaScript files
+│   └── js/            # JavaScript files
 │       └── main.js
-├── templates/          # HTML templates
+├── templates/         # HTML templates
 │   └── index.html
-├── .env                # Environment variables (create this file)
-├── requirements.txt    # Python dependencies
-└── README.md          # This file
+├── .env               # Environment variables (create this file)
+├── requirements.txt   # Python dependencies
+└── README.md         # This file
 ```
 
 ## Obtaining a Google Gemini API Key
@@ -120,13 +119,12 @@ Make sure to set these environment variables in your Render dashboard:
 - Google Gemini AI - Language model for chat responses
 - Edge TTS - Text-to-speech for sassy voice responses
 - SpeechRecognition - Voice command recognition
-- PyWhatKit - YouTube music integration
 - HTML5/CSS3/JS - Frontend interface
 
 ## Requirements
 
 - Python 3.8+
-- Internet connection (for AI and music features)
+- Internet connection (for AI features)
 - Microphone (for voice commands)
 - Speakers (for audio output)
 - Google Gemini API key
@@ -134,7 +132,7 @@ Make sure to set these environment variables in your Render dashboard:
 ## Troubleshooting
 
 1. **If deployment fails:**
-   - Check the Render logs
+   - Check the Railway logs
    - Ensure all dependencies are in requirements.txt
    - Verify environment variables are set correctly
 
