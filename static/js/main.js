@@ -68,19 +68,28 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             recognition.onend = () => {
-                console.log('Recognition ended');
-                if (shouldListen) {
+                console.log('Recognition ended, shouldListen:', shouldListen);
+                console.log("RECOGNITION ACTUALLY STOPPED");
+                
+                // Add a timestamp to prevent rapid restart after manual stop
+                const currentTime = new Date().getTime();
+                const lastStopTime = recognition.lastStopTime || 0;
+                
+                // Only auto-restart if shouldListen is true AND it wasn't manually stopped within last 1 second
+                if (shouldListen && (currentTime - lastStopTime) > 1000) {
                     setTimeout(() => {
                         try {
                             recognition.start();
                             console.log('Recognition restarted');
                             micStatus.textContent = 'Listening...';
+                            micButton.classList.add('active');
                         } catch (e) {
                             console.error('Error restarting recognition:', e);
                         }
                     }, 500);
                 } else {
                     voiceWave.classList.remove('active');
+                    micButton.classList.remove('active');
                     micStatus.textContent = 'Microphone ready';
                 }
             };
@@ -126,14 +135,23 @@ document.addEventListener('DOMContentLoaded', () => {
             shouldListen = false;
             if (recognition) {
                 try {
+                    // More aggressively prevent restart
+                    recognition.lastStopTime = new Date().getTime();
                     recognition.stop();
+                    
+                    // Force a complete recreation of the recognition object
+                    setTimeout(() => {
+                        if (!shouldListen) {
+                            // Double-confirm mic is off after a short delay
+                            voiceWave.classList.remove('active');
+                            micButton.classList.remove('active');
+                            micStatus.textContent = "Microphone ready";
+                        }
+                    }, 100);
                 } catch (e) {
                     console.error("Error stopping recognition:", e);
                 }
             }
-            voiceWave.classList.remove('active');
-            micButton.classList.remove('active');
-            micStatus.textContent = "Microphone ready";
             return; // Exit early - no need to request permissions again
         }
         
