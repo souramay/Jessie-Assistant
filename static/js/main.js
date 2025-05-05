@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const micButton = document.getElementById('mic-button');
     const sendButton = document.getElementById('send-button');
     const userInput = document.getElementById('user-input');
-    const voiceWave = document.getElementById('voice-wave');
+    const voiceWave = document.querySelector('.voice-wave') || document.getElementById('voice-wave');
     const dynamicTextPanel = document.querySelector('.dynamic-text-panel');
     const keyboardToggle = document.getElementById('keyboard-toggle');
     const keyboardContainer = document.getElementById('keyboard-container');
@@ -27,24 +27,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Clear and simple suggestion update function
     function updateSuggestions() {
-        // Clear existing suggestions
         const suggestionContainer = document.getElementById('suggestion-container');
         if (!suggestionContainer) return;
         
         suggestionContainer.innerHTML = '';
         
-        // Get random suggestions (3-5 depending on screen size)
         const count = window.innerWidth > 768 ? 5 : 3;
         const shuffled = [...suggestions].sort(() => 0.5 - Math.random()).slice(0, count);
         
-        // Create and append suggestion elements
         shuffled.forEach(text => {
             const suggestion = document.createElement('div');
             suggestion.className = 'suggestion';
             suggestion.textContent = text;
             suggestion.addEventListener('click', () => {
                 document.getElementById('user-input').value = text;
-                // Trigger send if needed
                 document.getElementById('send-button').click();
             });
             suggestionContainer.appendChild(suggestion);
@@ -55,60 +51,105 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSuggestions();
     setInterval(updateSuggestions, 30000);
     
-// Revert to using webkitSpeechRecognition for voice input
+    // Speech recognition setup
+    let recognition = null;
+    let shouldListen = false;  // Flag to control continuous listening
 
-let recognition = null;
-let shouldListen = false;  // Flag to control continuous listening
+    function initSpeechRecognition() {
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
 
-if ('webkitSpeechRecognition' in window) {
-    recognition = new webkitSpeechRecognition();
-    recognition.continuous = true;  // Continuous listening enabled
-    recognition.interimResults = false;
+            recognition.onstart = () => {
+                console.log('Recognition started');
+                voiceWave.classList.add('active');
+                micStatus.textContent = 'Listening...';
+            };
 
-    recognition.onstart = () => {
-        console.log('Recognition started');
-        voiceWave.classList.add('active');
-        micStatus.textContent = 'Listening...';
-    };
-
-    recognition.onend = () => {
-        console.log('Recognition ended');
-        if (shouldListen) {
-            // Add delay before restarting to prevent rapid cycling
-            setTimeout(() => {
-                try {
-                    recognition.start();
-                    console.log('Recognition restarted');
-                    micStatus.textContent = 'Listening...';
-                } catch (e) {
-                    console.error('Error restarting recognition:', e);
+            recognition.onend = () => {
+                console.log('Recognition ended');
+                if (shouldListen) {
+                    setTimeout(() => {
+                        try {
+                            recognition.start();
+                            console.log('Recognition restarted');
+                            micStatus.textContent = 'Listening...';
+                        } catch (e) {
+                            console.error('Error restarting recognition:', e);
+                        }
+                    }, 500);
+                } else {
+                    voiceWave.classList.remove('active');
+                    micStatus.textContent = 'Microphone ready';
                 }
-            }, 500); // 500ms delay before restart
+            };
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                console.log('Recognition result:', text);
+                userInput.value = text;
+                sendMessage();
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                micStatus.textContent = 'Error: ' + event.error;
+            };
         } else {
-            voiceWave.classList.remove('active');
-            micStatus.textContent = 'Microphone ready';
+            micButton.style.display = 'none';
+            console.log('Speech recognition not supported');
         }
-    };
-
-    recognition.onresult = (event) => {
-        const text = event.results[0][0].transcript;
-        console.log('Recognition result:', text);
-        userInput.value = text;
-        sendMessage();
-    };
-
-    recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        micStatus.textContent = 'Error: ' + event.error;
-    };
-
-    // Start recognition automatically on page load
-    shouldListen = true;
-    recognition.start();
-} else {
-    micButton.style.display = 'none';
-    console.log('Speech recognition not supported');
-}
+    }
+    
+    // Initialize speech recognition
+    initSpeechRecognition();
+    
+    // SINGLE CLEAN MIC BUTTON HANDLER
+    micButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Reset error states
+        micButton.classList.remove('error');
+        micStatus.classList.remove('error');
+        
+        // Hide keyboard if visible
+        if (keyboardContainer.style.display !== 'none') {
+            keyboardContainer.style.display = 'none';
+            keyboardToggle.classList.remove('active');
+        }
+        
+        // Check microphone permission
+        navigator.mediaDevices.getUserMedia({audio: true})
+            .then(stream => {
+                // Stop tracks immediately (just testing permission)
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Toggle recognition
+                if (recognition) {
+                    if (shouldListen) {
+                        // Turn OFF
+                        shouldListen = false;
+                        recognition.stop();
+                        voiceWave.classList.remove('active');
+                        micStatus.textContent = "Microphone ready";
+                    } else {
+                        // Turn ON
+                        shouldListen = true;
+                        recognition.start();
+                        voiceWave.classList.add('active');
+                        micStatus.textContent = "Listening...";
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("Microphone permission denied:", err);
+                micButton.classList.add('error');
+                micStatus.classList.add('error');
+                micStatus.textContent = "Access denied";
+            });
+    });
     
     // Handle input changes
     userInput.addEventListener('input', (e) => {
@@ -128,149 +169,23 @@ if ('webkitSpeechRecognition' in window) {
         sendMessage();
     });
     
-    // Handle microphone button click
-    micButton.addEventListener('click', () => {
+    // Keyboard toggle functionality
+    keyboardToggle.addEventListener('click', () => {
         if (recognition) {
-            if (shouldListen) {
-                shouldListen = false;
-                recognition.stop();
-                micStatus.textContent = 'Microphone stopped';
-                voiceWave.classList.remove('active');
-                console.log('Recognition stopped by mic button');
-            } else {
-                shouldListen = true;
-                try {
-                    recognition.start();
-                    micStatus.textContent = 'Listening...';
-                    console.log('Recognition started by mic button');
-                } catch (e) {
-                    console.error('Error starting recognition:', e);
-                }
-            }
+            recognition.stop();
+            shouldListen = false;
+        }
+        
+        if (keyboardContainer.style.display === 'none') {
+            keyboardContainer.style.display = 'flex';
+            keyboardToggle.classList.add('active');
+            userInput.focus();
+        } else {
+            keyboardContainer.style.display = 'none';
+            keyboardToggle.classList.remove('active');
         }
     });
     
-    // Function to add message to the panel
-    function addMessage(text, type) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${type}`;
-        
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-        
-        const p = document.createElement('p');
-        p.textContent = text;
-        contentDiv.appendChild(p);
-        
-        messageDiv.appendChild(contentDiv);
-        dynamicTextPanel.appendChild(messageDiv);
-        dynamicTextPanel.scrollTop = dynamicTextPanel.scrollHeight;
-    }
-    
-    // Show typing indicator
-    function showTypingIndicator() {
-        const typingDiv = document.createElement('div');
-        typingDiv.className = 'typing-indicator';
-        
-        for (let i = 0; i < 3; i++) {
-            const dot = document.createElement('div');
-            dot.className = 'typing-dot';
-            typingDiv.appendChild(dot);
-        }
-        
-        dynamicTextPanel.appendChild(typingDiv);
-        dynamicTextPanel.scrollTop = dynamicTextPanel.scrollHeight;
-        return typingDiv;
-    }
-    
-    // Remove typing indicator
-    function removeTypingIndicator(typingDiv) {
-        if (typingDiv) {
-            typingDiv.remove();
-        }
-    }
-    
-    // Function to play audio response
-    function playAudioResponse(audioSrc) {
-        if (recognition) {
-            shouldListen = false;  // Pause listening during audio playback
-            recognition.stop();    // Stop recognition while playing audio
-        }
-        const audio = new Audio(audioSrc);
-        audio.play().catch(e => console.error('Error playing audio:', e));
-        audio.onended = () => {
-            if (recognition) {
-                shouldListen = true;  // Resume listening after audio playback
-                recognition.start();  // Restart recognition after audio ends
-                micStatus.textContent = 'Listening...';
-            }
-        };
-    }
-    
-    // Function to send message
-    async function sendMessage() {
-        const message = userInput.value.trim();
-        if (!message) return;
-        
-        // Add user message to panel
-        addMessage(message, 'user');
-        userInput.value = '';
-        
-        // Show typing indicator
-        const typingIndicator = showTypingIndicator();
-        
-        try {
-            const response = await fetch('/api/send_message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message: message })
-            });
-            
-            const data = await response.json();
-            
-            // Remove typing indicator
-            removeTypingIndicator(typingIndicator);
-            
-            // --- MUSIC PLAYBACK LOGIC ---
-            if (data.youtube_url) {
-                playYouTubeInPlayer(data.youtube_url);
-                addMessage(data.response, 'bot');
-                return;
-            }
-            // --- END MUSIC LOGIC ---
-            
-            // Add bot response to panel
-            addMessage(data.response, 'bot');
-            
-            // Play audio if available
-            if (data.audio) {
-                playAudioResponse(data.audio);
-            }
-            
-        } catch (error) {
-            console.error('Error:', error);
-            removeTypingIndicator(typingIndicator);
-            addMessage('Sorry, something went wrong. Please try again.', 'bot');
-        }
-    }
-
-    // Add Prism.js for syntax highlighting
-    const prismScript = document.createElement('script');
-    prismScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js';
-    document.head.appendChild(prismScript);
-
-    const prismCss = document.createElement('link');
-    prismCss.rel = 'stylesheet';
-    prismCss.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css';
-    document.head.appendChild(prismCss);
-
-    // Function to format code blocks
-    function formatCodeBlock(code, language) {
-        return `<pre class="code-block"><code class="language-${language}">${code}</code></pre>`;
-    }
-
     // Function to add message to the panel
     function addMessage(text, type) {
         const messageDiv = document.createElement('div');
@@ -316,15 +231,9 @@ if ('webkitSpeechRecognition' in window) {
         }
     }
     
-    // Voice wave animation
-    function animateVoiceWave() {
-        const wave = voiceWave.querySelector('.wave');
-        if (recognition) {
-            wave.classList.add('active');
-            wave.classList.remove('processing', 'error');
-        } else {
-            wave.classList.remove('active', 'processing', 'error');
-        }
+    // Function to format code blocks
+    function formatCodeBlock(code, language) {
+        return `<pre class="code-block"><code class="language-${language}">${code}</code></pre>`;
     }
     
     // Show typing indicator
@@ -332,7 +241,6 @@ if ('webkitSpeechRecognition' in window) {
         const typingDiv = document.createElement('div');
         typingDiv.className = 'typing-indicator';
         
-        // Add three bouncing dots
         for (let i = 0; i < 3; i++) {
             const dot = document.createElement('div');
             dot.className = 'typing-dot';
@@ -350,67 +258,81 @@ if ('webkitSpeechRecognition' in window) {
             typingDiv.remove();
         }
     }
-
-    // Initialize keyboard visibility
-    keyboardContainer.style.display = 'none';
-
-    // Keyboard toggle functionality
-    keyboardToggle.addEventListener('click', () => {
+    
+    // Function to play audio response
+    function playAudioResponse(audioSrc) {
         if (recognition) {
+            shouldListen = false;
             recognition.stop();
         }
-        
-        if (keyboardContainer.style.display === 'none') {
-            keyboardContainer.style.display = 'flex';
-            keyboardToggle.classList.add('active');
-            userInput.focus();
-        } else {
-            keyboardContainer.style.display = 'none';
-            keyboardToggle.classList.remove('active');
-        }
-    });
-
-    // Microphone toggle functionality
-    micButton.addEventListener('click', () => {
-        if (recognition) {
-            recognition.stop();
-        }
-        
-        if (keyboardContainer.style.display !== 'none') {
-            keyboardContainer.style.display = 'none';
-            keyboardToggle.classList.remove('active');
-        }
-        
-        if (!recognition) {
-            console.log('Initializing voice recognition...');
-            recognition = new webkitSpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            
-            recognition.onstart = () => {
-                console.log('Starting recognition');
-                voiceWave.classList.add('active');
+        const audio = new Audio(audioSrc);
+        audio.play().catch(e => console.error('Error playing audio:', e));
+        audio.onended = () => {
+            if (recognition) {
+                shouldListen = true;
+                recognition.start();
                 micStatus.textContent = 'Listening...';
-            };
+            }
+        };
+    }
+    
+    // Function to send message
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
+        
+        // Add user message to panel
+        addMessage(message, 'user');
+        userInput.value = '';
+        
+        // Show typing indicator
+        const typingIndicator = showTypingIndicator();
+        
+        try {
+            const response = await fetch('/api/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message })
+            });
             
-            recognition.onend = () => {
-                console.log('Stopping recognition');
-                voiceWave.classList.remove('active');
-                micStatus.textContent = 'Microphone ready';
-            };
+            const data = await response.json();
             
-            recognition.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                userInput.value = text;
-                sendMessage();
-            };
+            // Remove typing indicator
+            removeTypingIndicator(typingIndicator);
             
-            recognition.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                micStatus.textContent = 'Error: ' + event.error;
-            };
+            // Handle YouTube URLs
+            if (data.youtube_url) {
+                playYouTubeInPlayer(data.youtube_url);
+                addMessage(data.response, 'bot');
+                return;
+            }
+            
+            // Add bot response to panel
+            addMessage(data.response, 'bot');
+            
+            // Play audio if available
+            if (data.audio) {
+                playAudioResponse(data.audio);
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            removeTypingIndicator(typingIndicator);
+            addMessage('Sorry, something went wrong. Please try again.', 'bot');
         }
-    });
+    }
+
+    // Add Prism.js for syntax highlighting
+    const prismScript = document.createElement('script');
+    prismScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js';
+    document.head.appendChild(prismScript);
+
+    const prismCss = document.createElement('link');
+    prismCss.rel = 'stylesheet';
+    prismCss.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css';
+    document.head.appendChild(prismCss);
 
     // Add CSS for code blocks
     const style = document.createElement('style');
@@ -445,14 +367,13 @@ if ('webkitSpeechRecognition' in window) {
     `;
     document.head.appendChild(style);
 
-    // Add this function if not already present:
+    // YouTube functions
     function playYouTubeStream(youtubeUrl) {
         const audio = new Audio(`/api/stream_youtube_audio?url=${encodeURIComponent(youtubeUrl)}`);
         audio.play().catch(e => console.error('Error playing YouTube stream:', e));
         addMessage('Playing YouTube audio stream...', 'bot');
     }
 
-    // Add this function to embed and play YouTube video/audio
     function playYouTubeInPlayer(youtubeUrl) {
         // Remove any existing player
         let existing = document.getElementById('youtube-player');
@@ -482,257 +403,6 @@ if ('webkitSpeechRecognition' in window) {
         addMessage('Playing YouTube video in browser.', 'bot');
     }
 
-    // Add near the top of your main.js file, in the DOMContentLoaded function
-    function setupMicrophonePermissions() {
-        micButton.addEventListener('click', async () => {
-            try {
-                // Request microphone access
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                stream.getTracks().forEach(track => track.stop()); // Just testing permission
-                
-                // Remove error state
-                micButton.classList.remove('error');
-                micStatus.classList.remove('error');
-                
-                // Toggle recognition if it exists
-                if (recognition) {
-                    if (shouldListen) {
-                        shouldListen = false;
-                        recognition.stop();
-                        micStatus.textContent = 'Microphone ready';
-                        voiceWave.classList.remove('active');
-                    } else {
-                        shouldListen = true;
-                        recognition.start();
-                        micStatus.textContent = 'Listening...';
-                        voiceWave.classList.add('active');
-                    }
-                } else {
-                    micStatus.textContent = 'Speech recognition unavailable';
-                }
-            } catch (error) {
-                // Handle permission errors
-                console.error('Microphone error:', error);
-                micButton.classList.add('error');
-                micStatus.classList.add('error');
-                micStatus.textContent = "Microphone access denied";
-            }
-        });
-    }
-
-    // Call this function at the end of your DOMContentLoaded
-    setupMicrophonePermissions();
-
-    // Clean up all microphone handlers and replace with a single one
-    function cleanupMicHandlers() {
-        // Remove the button and create a fresh copy to remove all event listeners
-        const oldMic = document.getElementById('mic-button');
-        const newMic = oldMic.cloneNode(true);
-        oldMic.parentNode.replaceChild(newMic, oldMic);
-        
-        // Re-get the mic button and status elements
-        const micButton = document.getElementById('mic-button');
-        const micStatus = document.getElementById('mic-status');
-        
-        // Add a single clean event handler
-        micButton.addEventListener('click', function(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            // Request permission explicitly
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    // Just testing permission
-                    stream.getTracks().forEach(track => track.stop());
-                    
-                    // Clear error state
-                    micButton.classList.remove('error');
-                    micStatus.classList.remove('error');
-                    
-                    // Toggle recognition
-                    if (recognition) {
-                        if (shouldListen) {
-                            shouldListen = false;
-                            recognition.stop();
-                            voiceWave.classList.remove('active');
-                            micStatus.textContent = "Microphone ready";
-                        } else {
-                            shouldListen = true;
-                            recognition.start();
-                            voiceWave.classList.add('active'); 
-                            micStatus.textContent = "Listening...";
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error("Microphone error:", error);
-                    micButton.classList.add('error');
-                    micStatus.classList.add('error');
-                    micStatus.textContent = "Microphone access denied";
-                });
-        });
-    }
-
-    // Call at the end
-    cleanupMicHandlers();
+    // Initialize keyboard visibility
+    keyboardContainer.style.display = 'none';
 });
-
-// Add this to your main.js file (after all variable declarations)
-
-function fixMicrophonePermissions() {
-  // Check if browser supports getUserMedia
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    console.log("Browser doesn't support getUserMedia");
-    micButton.classList.add('error');
-    micStatus.classList.add('error');
-    micStatus.textContent = "Microphone not supported";
-    return;
-  }
-
-  // Handle mic button clicks
-  micButton.addEventListener('click', function(event) {
-    // Prevent any default behavior
-    event.preventDefault();
-    
-    // Request microphone access
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(function(stream) {
-        // Permission granted - stop tracks immediately (we just want to check permission)
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Remove error state
-        micButton.classList.remove('error');
-        micStatus.classList.remove('error');
-        micStatus.textContent = "Listening...";
-        
-        // Continue with normal mic button behavior (recognition, etc.)
-        if (recognition) {
-          if (!shouldListen) {
-            shouldListen = true;
-            recognition.start();
-          } else {
-            shouldListen = false;
-            recognition.stop();
-            micStatus.textContent = "Microphone ready";
-          }
-        }
-      })
-      .catch(function(err) {
-        // Permission denied or error
-        console.error("Microphone error:", err);
-        micButton.classList.add('error');
-        micStatus.classList.add('error');
-        micStatus.textContent = "Microphone access denied";
-      });
-  });
-}
-
-// Call this function when the document is loaded
-document.addEventListener('DOMContentLoaded', fixMicrophonePermissions);
-
-// Only run one microphone handler cleanup to avoid conflicts
-document.addEventListener('DOMContentLoaded', function() {
-  // Wait for everything to load
-  setTimeout(function() {
-    // Get the mic button and completely remove all event listeners
-    const oldMic = document.getElementById('mic-button');
-    const newMic = oldMic.cloneNode(true);
-    oldMic.parentNode.replaceChild(newMic, oldMic);
-    
-    // Get the new references
-    const micButton = document.getElementById('mic-button');
-    const micStatus = document.getElementById('mic-status');
-    
-    // Add just one clean handler
-    micButton.addEventListener('click', function(event) {
-      event.stopPropagation();
-      event.preventDefault();
-      
-      navigator.mediaDevices.getUserMedia({audio: true})
-        .then(function(stream) {
-          stream.getTracks().forEach(track => track.stop());
-          
-          // Handle recognition state
-          if (recognition) {
-            if (shouldListen) {
-              shouldListen = false;
-              recognition.stop();
-              voiceWave.classList.remove('active');
-              micStatus.textContent = "Microphone ready";
-            } else {
-              shouldListen = true;
-              recognition.start();
-              voiceWave.classList.add('active');
-              micStatus.textContent = "Listening...";
-            }
-          }
-        })
-        .catch(function(err) {
-          console.error("Microphone permission denied:", err);
-          micStatus.textContent = "Access denied";
-          micStatus.classList.add('error');
-        });
-    });
-  }, 500);
-});
-
-// Make sure to add these lines to your main.js
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize suggestions
-  updateSuggestions();
-  
-  // Update suggestions every 30 seconds
-  setInterval(updateSuggestions, 30000);
-});
-
-// Single clean microphone handler - replaces all others
-function setupMicrophoneHandler() {
-  // Remove any existing handlers
-  const newMicButton = document.getElementById('mic-button').cloneNode(true);
-  document.getElementById('mic-button').parentNode.replaceChild(newMicButton, document.getElementById('mic-button'));
-  
-  // Get fresh references
-  const micButton = document.getElementById('mic-button');
-  const micStatus = document.getElementById('mic-status');
-  const voiceWave = document.querySelector('.voice-wave');
-  
-  // Add single handler
-  micButton.addEventListener('click', function(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    navigator.mediaDevices.getUserMedia({audio: true})
-      .then(function(stream) {
-        // Stop tracks immediately (just testing permission)
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Clear error states
-        micButton.classList.remove('error');
-        micStatus.classList.remove('error');
-        
-        // Toggle recognition
-        if (recognition) {
-          if (shouldListen) {
-            shouldListen = false;
-            recognition.stop();
-            voiceWave.classList.remove('active');
-            micStatus.textContent = "Microphone ready";
-          } else {
-            shouldListen = true;
-            recognition.start();
-            voiceWave.classList.add('active');
-            micStatus.textContent = "Listening...";
-          }
-        }
-      })
-      .catch(function(err) {
-        console.error("Microphone permission denied:", err);
-        micButton.classList.add('error');
-        micStatus.classList.add('error');
-        micStatus.textContent = "Access denied";
-      });
-  });
-}
-
-// Call this at document load
-document.addEventListener('DOMContentLoaded', setupMicrophoneHandler);
