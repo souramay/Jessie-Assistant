@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize speech recognition
     initSpeechRecognition();
     
-    // SINGLE CLEAN MIC BUTTON HANDLER
+    // IMPROVED MIC BUTTON CLICK HANDLER
     micButton.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -120,27 +120,36 @@ document.addEventListener('DOMContentLoaded', () => {
             keyboardToggle.classList.remove('active');
         }
         
-        // Check microphone permission
+        // Toggle recognition state directly for better UX
+        if (shouldListen) {
+            // CLOSE MIC - stop listening immediately
+            shouldListen = false;
+            if (recognition) {
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.error("Error stopping recognition:", e);
+                }
+            }
+            voiceWave.classList.remove('active');
+            micButton.classList.remove('active');
+            micStatus.textContent = "Microphone ready";
+            return; // Exit early - no need to request permissions again
+        }
+        
+        // OPEN MIC - verify permission then start
         navigator.mediaDevices.getUserMedia({audio: true})
             .then(stream => {
                 // Stop tracks immediately (just testing permission)
                 stream.getTracks().forEach(track => track.stop());
                 
-                // Toggle recognition
+                // Start listening
                 if (recognition) {
-                    if (shouldListen) {
-                        // Turn OFF
-                        shouldListen = false;
-                        recognition.stop();
-                        voiceWave.classList.remove('active');
-                        micStatus.textContent = "Microphone ready";
-                    } else {
-                        // Turn ON
-                        shouldListen = true;
-                        recognition.start();
-                        voiceWave.classList.add('active');
-                        micStatus.textContent = "Listening...";
-                    }
+                    shouldListen = true;
+                    recognition.start();
+                    voiceWave.classList.add('active');
+                    micButton.classList.add('active');
+                    micStatus.textContent = "Listening...";
                 }
             })
             .catch(err => {
