@@ -219,7 +219,7 @@ def stream_youtube_audio():
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 8080))  # Changed default from 5000 to 8080
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     app.run(host="0.0.0.0", port=port, debug=debug)
 
