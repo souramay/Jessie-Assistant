@@ -3,7 +3,6 @@ import os
 import logging
 import sys
 from dotenv import load_dotenv
-import yt_dlp
 import requests
 from youtubesearchpython import VideosSearch
 from googleapiclient.discovery import build
@@ -63,40 +62,35 @@ RANDOM_MUSIC_QUERIES = [
     "chill vibes"
 ]
 
-def get_youtube_audio_url(youtube_url):
-    try:
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'quiet': True,
-            'skip_download': True,
-            'noplaylist': True,
-            'nocheckcertificate': True,
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(youtube_url, download=False)
-            if not info or 'url' not in info:
-                raise Exception("Could not extract audio URL")
-            return info['url'], info.get('title', ''), info.get('ext', 'mp3')
-    except Exception as e:
-        logger.error(f"Error getting YouTube audio URL: {e}")
-        raise
-
 def search_youtube(query):
     try:
         youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
         request = youtube.search().list(
             q=query,
-            part='id',
+            part='snippet,id',  # Changed from just 'id' to get more metadata
             type='video',
-            maxResults=5,  # Get more results to filter
-            videoEmbeddable='true'  # Only embeddable videos
+            maxResults=5,
+            videoEmbeddable='true'
         )
         response = request.execute()
         items = response.get('items')
+        if not items:
+            return None
+            
+        # Get the first valid result
         for item in items:
             video_id = item['id']['videoId']
-            # Optionally, you can add more checks here
-            return f"https://www.youtube.com/watch?v={video_id}"
+            title = item['snippet']['title']
+            channel = item['snippet']['channelTitle']
+            thumbnail = item['snippet']['thumbnails']['medium']['url']
+            
+            return {
+                'url': f"https://www.youtube.com/watch?v={video_id}",
+                'title': title,
+                'channel': channel,
+                'thumbnail': thumbnail,
+                'video_id': video_id
+            }
         return None
     except Exception as e:
         logger.error(f"Error in search_youtube: {e}")
@@ -121,24 +115,33 @@ def send_message():
         if message.lower() == "play music" or message.lower() == "play music ":
             # Select a random music query
             random_query = random.choice(RANDOM_MUSIC_QUERIES)
-            youtube_url = search_youtube(random_query)
-            if youtube_url:
+            youtube_result = search_youtube(random_query)
+            
+            if youtube_result:
+                title = youtube_result.get('title', 'Unknown')
+                channel = youtube_result.get('channel', '')
                 return jsonify({
-                    'response': f"Playing random {random_query} music from YouTube!",
-                    'youtube_url': youtube_url
+                    'response': f"Playing {title}{' by ' + channel if channel else ''} from YouTube!",
+                    'youtube_url': youtube_result['url'],
+                    'youtube_metadata': youtube_result
                 })
             else:
                 return jsonify({'response': "Sorry, I couldn't find any random music right now."})
+                
         elif message.lower().startswith("play "):
             song_query = message[5:]
-            youtube_url = search_youtube(song_query)
-            if youtube_url:
+            youtube_result = search_youtube(song_query)
+            
+            if youtube_result:
+                title = youtube_result.get('title', song_query)
+                channel = youtube_result.get('channel', '')
                 return jsonify({
-                    'response': f"Playing {song_query} from YouTube!",
-                    'youtube_url': youtube_url
+                    'response': f"Playing {title}{' by ' + channel if channel else ''} from YouTube!",
+                    'youtube_url': youtube_result['url'],
+                    'youtube_metadata': youtube_result
                 })
             else:
-                return jsonify({'response': "Sorry, I couldn't find that song on YouTube."})
+                return jsonify({'response': f"Sorry, I couldn't find '{song_query}' on YouTube."})
 
         # --- Existing chat logic ---
         response = get_response(chat, message)
@@ -182,39 +185,6 @@ def cleanup():
         })
     except Exception as e:
         logger.error(f"Error in cleanup: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/stream_youtube_audio')
-def stream_youtube_audio():
-    youtube_url = request.args.get('url')
-    if not youtube_url:
-        return jsonify({'error': 'No URL provided'}), 400
-
-    try:
-        stream_url, title, audio_ext = get_youtube_audio_url(youtube_url)
-        def generate():
-            try:
-                with requests.get(stream_url, stream=True) as r:
-                    r.raise_for_status()  # Will raise an exception for 4XX/5XX responses
-                    for chunk in r.iter_content(chunk_size=4096):
-                        if chunk:
-                            yield chunk
-            except requests.RequestException as e:
-                logger.error(f"Error in stream request: {e}")
-                yield b''  # Return empty to signal problem
-
-        # Map common extensions to MIME types
-        mime_types = {
-            'mp3': 'audio/mpeg',
-            'ogg': 'audio/ogg',
-            'm4a': 'audio/mp4',
-            'webm': 'audio/webm',
-        }
-        mimetype = mime_types.get(audio_ext.lower(), 'audio/mpeg')
-        
-        return Response(generate(), mimetype=mimetype)
-    except Exception as e:
-        logger.error(f"Error streaming YouTube audio: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":

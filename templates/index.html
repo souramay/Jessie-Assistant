@@ -67,5 +67,23 @@
             // Array of different rude introduction messages
             const introMessages = [
                 "Oh great, you're back. I'm Jessie, your AI assistant or whatever. Need music? Information? I guess I can help, if I HAVE to. Just click the stupid microphone or type something in the box. Try not to ask anything too idiotic.",
-                    "Ugh, another human. Look, I'm Jessie. I can play music, answer questions, and pretend."
-                ];
+                "Ugh, another human. Look, I'm Jessie. I can play music, answer questions, and pretend to care about your problems. What do you want?"
+            ];
+
+            // Display a random welcome message
+            const randomIndex = Math.floor(Math.random() * introMessages.length);
+            const welcomeMessage = introMessages[randomIndex];
+            
+            // Create and add the message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <p>${welcomeMessage}</p>
+                </div>
+            `;
+            textPanel.appendChild(messageDiv);
+        });
+    </script>
+</body>
+</html>

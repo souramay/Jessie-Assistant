@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const micStatus = document.getElementById('mic-status');
     const suggestionContainer = document.getElementById('suggestion-container');
     
+    // Global variables for YouTube functionality
+    let isYouTubePlaying = false;
+    let micWasActiveBeforeYouTube = false;
+    
     // Suggestion system
     const suggestions = [
         "Try asking me to play some music",
@@ -115,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize speech recognition
     initSpeechRecognition();
     
-    // IMPROVED MIC BUTTON CLICK HANDLER
+    // IMPROVED MIC BUTTON CLICK HANDLER with YouTube awareness
     micButton.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -125,9 +129,17 @@ document.addEventListener('DOMContentLoaded', () => {
         micStatus.classList.remove('error');
         
         // Hide keyboard if visible
-        if (keyboardContainer.style.display !== 'none') {
+        if (keyboardContainer && keyboardContainer.style.display !== 'none') {
             keyboardContainer.style.display = 'none';
             keyboardToggle.classList.remove('active');
+        }
+        
+        // If YouTube is playing, don't allow immediate mic activation
+        if (document.getElementById('youtube-player')) {
+            // First click just closes the video
+            document.getElementById('youtube-player').remove();
+            micStatus.textContent = "Click again to activate microphone";
+            return;
         }
         
         // Toggle recognition state directly for better UX
@@ -166,10 +178,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             })
             .catch(err => {
-                console.error("Microphone permission denied:", err);
+                // Handle errors
+                console.error("Microphone permission error:", err);
                 micButton.classList.add('error');
                 micStatus.classList.add('error');
-                micStatus.textContent = "Access denied";
+                micStatus.textContent = "Microphone access denied";
             });
     });
     
@@ -326,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Handle YouTube URLs
             if (data.youtube_url) {
-                playYouTubeInPlayer(data.youtube_url);
+                playYouTubeInPlayer(data.youtube_url, data.youtube_metadata);
                 addMessage(data.response, 'bot');
                 return;
             }
@@ -390,100 +403,112 @@ document.addEventListener('DOMContentLoaded', () => {
     document.head.appendChild(style);
 
     // YouTube functions
-    let isYouTubePlaying = false;
-    let micWasActiveBeforeYouTube = false;
 
     function stopMic() {
         if (shouldListen) {
             shouldListen = false;
-            micWasActiveBeforeYouTube = true;
             if (recognition) {
                 try {
                     recognition.stop();
+                    console.log("Microphone stopped for video playback");
                 } catch (e) {
                     console.error("Error stopping recognition:", e);
                 }
             }
-            const micButton = document.getElementById('mic-button');
-            const voiceWave = document.getElementById('voice-wave');
-            const micStatus = document.getElementById('mic-status');
-            if (micButton) micButton.classList.remove('active');
-            if (voiceWave) voiceWave.classList.remove('active');
-            if (micStatus) micStatus.textContent = "Microphone paused due to YouTube playback";
-            console.log("Mic stopped because YouTube started playing");
+            voiceWave.classList.remove('active');
+            micButton.classList.remove('active');
+            micStatus.textContent = "Paused during video";
         }
     }
 
     function resumeMic() {
-        if (micWasActiveBeforeYouTube) {
-            micWasActiveBeforeYouTube = false;
-            if (recognition) {
-                try {
-                    recognition.start();
-                    shouldListen = true;
-                    const micButton = document.getElementById('mic-button');
-                    const voiceWave = document.getElementById('voice-wave');
-                    const micStatus = document.getElementById('mic-status');
-                    if (micButton) micButton.classList.add('active');
-                    if (voiceWave) voiceWave.classList.add('active');
-                    if (micStatus) micStatus.textContent = "Listening...";
-                    console.log("Mic resumed after YouTube stopped");
-                } catch (e) {
-                    console.error("Error resuming recognition:", e);
-                }
-            }
-        }
+        // Only automatically resume if user taps mic button
+        micStatus.textContent = "Tap to resume listening";
     }
 
-    function playYouTubeInPlayer(youtubeUrl) {
+    function playYouTubeInPlayer(youtubeUrl, metadata = null) {
+        console.log("Playing YouTube video:", youtubeUrl);
+        
+        // Stop mic first
+        stopMic();
+        
         // Remove any existing player
         let existing = document.getElementById('youtube-player');
         if (existing) existing.remove();
 
-        // Extract video ID from URL
-        const match = youtubeUrl.match(/v=([^&]+)/);
-        if (!match) {
-            addMessage('Could not extract YouTube video ID.', 'bot');
-            return;
-        }
-        const videoId = match[1];
+        try {
+            // Extract video ID from URL or metadata
+            let videoId;
+            let videoTitle = 'YouTube Video';
+            let channelName = '';
+            
+            if (metadata && metadata.video_id) {
+                videoId = metadata.video_id;
+                videoTitle = metadata.title || 'YouTube Video';
+                channelName = metadata.channel || '';
+            } else {
+                // Extract from URL as fallback
+                if (youtubeUrl.includes('youtu.be/')) {
+                    const parts = youtubeUrl.split('youtu.be/');
+                    if (parts.length > 1) {
+                        videoId = parts[1].split('?')[0];
+                    }
+                } else if (youtubeUrl.includes('youtube.com/watch')) {
+                    const match = youtubeUrl.match(/v=([^&]+)/);
+                    if (match) videoId = match[1];
+                } else if (youtubeUrl.includes('youtube.com/embed/')) {
+                    const parts = youtubeUrl.split('embed/');
+                    if (parts.length > 1) {
+                        videoId = parts[1].split('?')[0];
+                    }
+                }
+            }
+            
+            if (!videoId) {
+                throw new Error('Could not extract YouTube video ID');
+            }
+            
+            // Set global state
+            isYouTubePlaying = true;
 
-        // Create a container for the player
-        const playerDiv = document.createElement('div');
-        playerDiv.id = 'youtube-player';
-        playerDiv.style = 'margin: 20px 0; text-align: center;';
-        playerDiv.innerHTML = `
-            <iframe width="320" height="180"
-                src="https://www.youtube.com/embed/${videoId}?autoplay=1"
-                frameborder="0"
-                allow="autoplay; encrypted-media"
-                allowfullscreen>
-            </iframe>
-        `;
-        document.querySelector('.dynamic-text-panel').appendChild(playerDiv);
-        addMessage('Playing YouTube video in browser.', 'bot');
-
-        // Set flag and stop mic
-        isYouTubePlaying = true;
-        stopMic();
-
-        // Listen for iframe removal or stop event to resume mic
-        const iframe = document.getElementById('youtube-player').querySelector('iframe');
-        if (iframe) {
-            // Since we cannot directly detect YouTube iframe events easily,
-            // add a MutationObserver to detect removal of the playerDiv
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach(mutation => {
-                    mutation.removedNodes.forEach(removed => {
-                        if (removed.id === 'youtube-player') {
-                            isYouTubePlaying = false;
-                            resumeMic();
-                            observer.disconnect();
-                        }
-                    });
-                });
+            // Create player container
+            const playerDiv = document.createElement('div');
+            playerDiv.id = 'youtube-player';
+            playerDiv.className = 'youtube-player-container';
+            
+            // Add HTML with close icon in header
+            playerDiv.innerHTML = `
+                <div class="player-header">
+                    <div class="video-title">${videoTitle}</div>
+                    <div class="video-channel">${channelName ? 'by ' + channelName : ''}</div>
+                    <button class="close-player-icon" aria-label="Close video player">×</button>
+                </div>
+                <div class="iframe-container">
+                    <iframe 
+                        width="100%" 
+                        height="180" 
+                        src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            `;
+            
+            // Add to DOM
+            document.querySelector('.dynamic-text-panel').appendChild(playerDiv);
+            
+            // Add event listener to close button - using the new class name
+            document.querySelector('.close-player-icon').addEventListener('click', () => {
+                playerDiv.remove();
+                isYouTubePlaying = false;
+                resumeMic();
             });
-            observer.observe(document.querySelector('.dynamic-text-panel'), { childList: true });
+            
+        } catch (error) {
+            console.error("YouTube player error:", error);
+            addMessage(`Sorry, I couldn't play that YouTube video: ${error.message}`, 'bot');
+            isYouTubePlaying = false;
         }
     }
 
@@ -548,4 +573,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize keyboard visibility
     keyboardContainer.style.display = 'none';
+
+    // Display welcome message
+    function showWelcomeMessage() {
+        // Clear any existing messages first
+        const textPanel = document.querySelector('.dynamic-text-panel');
+        textPanel.innerHTML = '';
+        
+        // Array of rude introduction messages
+        const introMessages = [
+            "Oh great, you're back. I'm Jessie, your AI assistant or whatever. Need music? Information? I guess I can help, if I HAVE to. Just click the stupid microphone or type something in the box. Try not to ask anything too idiotic.",
+            "Ugh, another human. Look, I'm Jessie. I can play music, answer questions, and pretend to care about your problems. What do you want?"
+        ];
+        
+        // Select a random message and display it
+        const randomMessage = introMessages[Math.floor(Math.random() * introMessages.length)];
+        addMessage(randomMessage, 'bot');
+    }
+
+    // Show welcome message
+    showWelcomeMessage();
 });
