@@ -91,3 +91,38 @@ async function startListening() {
     showNotification("Please allow microphone access to use voice input", "error");
   }
 }
+
+// Implement stopListening function to properly stop mic and update UI
+function stopListening() {
+  if (!isListening) return;
+
+  isListening = false;
+
+  // Stop mediaRecorder if active
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+
+  // Stop all audio tracks
+  if (mediaRecorder && mediaRecorder.stream) {
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+  }
+
+  // Clear recording timeout
+  if (recordingTimeout) {
+    clearTimeout(recordingTimeout);
+    recordingTimeout = null;
+  }
+
+  // Update UI
+  updateMicrophoneState(false);
+
+  // Also stop speech recognition if available
+  if (typeof recognition !== 'undefined' && recognition && recognition.stop) {
+    try {
+      recognition.stop();
+    } catch (e) {
+      console.error("Error stopping recognition in stopListening:", e);
+    }
+  }
+}
