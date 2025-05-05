@@ -403,30 +403,57 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage('Playing YouTube video in browser.', 'bot');
     }
 
-    // Auto-start microphone on page load
+    // Improved auto-start microphone function
     function autoStartMicrophone() {
         console.log("Auto-starting microphone...");
         
-        // Request microphone permission
+        // Force the active state immediately
+        micButton.classList.add('active');
+        micStatus.textContent = "Starting...";
+        voiceWave.classList.add('active');
+        
+        // First initialize recognition if needed
+        if (!recognition && 'webkitSpeechRecognition' in window) {
+            initSpeechRecognition();
+        }
+        
+        // Request microphone permission and start listening
         navigator.mediaDevices.getUserMedia({audio: true})
-          .then(stream => {
-            // Stop the stream - we just needed permission
-            stream.getTracks().forEach(track => track.stop());
-            
-            // Start recognition if available
-            if (recognition) {
-              shouldListen = true;
-              recognition.start();
-              voiceWave.classList.add('active');
-              micStatus.textContent = "Listening...";
-              micButton.classList.add('active');
-            }
-          })
-          .catch(err => {
-            console.error("Could not auto-start microphone:", err);
-            // Don't show error state immediately to avoid scaring users
-            micStatus.textContent = "Click to enable mic";
-          });
+            .then(stream => {
+                console.log("Microphone permission granted!");
+                // Stop the test stream
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Start recognition after a short delay
+                setTimeout(() => {
+                    if (recognition) {
+                        shouldListen = true;
+                        try {
+                            recognition.start();
+                            console.log("Recognition started automatically");
+                            micStatus.textContent = "Listening...";
+                        } catch (e) {
+                            console.error("Error auto-starting recognition:", e);
+                            // Try one more time after a delay
+                            setTimeout(() => {
+                                try {
+                                    recognition.start();
+                                    shouldListen = true;
+                                    micStatus.textContent = "Listening...";
+                                } catch (e2) {
+                                    console.error("Second attempt failed:", e2);
+                                }
+                            }, 500);
+                        }
+                    }
+                }, 300);
+            })
+            .catch(err => {
+                console.error("Could not auto-start microphone:", err);
+                micButton.classList.remove('active');
+                voiceWave.classList.remove('active');
+                micStatus.textContent = "Click to enable mic";
+            });
     }
     
     // Call auto-start after a brief delay to let the page finish loading
