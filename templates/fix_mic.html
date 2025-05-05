@@ -1,0 +1,343 @@
+from flask import Flask, request, jsonify, send_from_directory, render_template, Response, stream_with_context
+import os
+import logging
+import sys
+from dotenv import load_dotenv
+import yt_dlp
+import requests
+from youtubesearchpython import VideosSearch
+from googleapiclient.discovery import build
+import random
+
+# Add the current directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Import application modules
+from module.voice import speak, cleanup_old_audio_files, speak_sync
+from module.chat import start_conversation, get_response
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Flask app
+app = Flask(__name__)
+
+# Configure app
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['UPLOAD_FOLDER'] = os.path.join(current_dir, 'static', 'audio')
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Initialize chat at startup
+chat = start_conversation()
+YOUTUBE_API_KEY = "AIzaSyDRX-TRnd3_r9K3JapkQSxvDY5RUAITO9g"
+
+RANDOM_MUSIC_QUERIES = [
+    "popular hits",
+    "classic rock",
+    "lofi beats",
+    "jazz classics",
+    "electronic dance",
+    "hip hop",
+    "piano instrumental",
+    "ambient background",
+    "indie pop",
+    "workout motivation",
+    "relaxing acoustic",
+    "trending music",
+    "study playlist",
+    "chill vibes"
+]
+
+def get_youtube_audio_url(youtube_url):
+    try:
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'skip_download': True,
+            'noplaylist': True,
+            'nocheckcertificate': True,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(youtube_url, download=False)
+            if not info or 'url' not in info:
+                raise Exception("Could not extract audio URL")
+            return info['url'], info.get('title', ''), info.get('ext', 'mp3')
+    except Exception as e:
+        logger.error(f"Error getting YouTube audio URL: {e}")
+        raise
+
+def search_youtube(query):
+    try:
+        youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+        request = youtube.search().list(
+            q=query,
+            part='id',
+            type='video',
+            maxResults=5,  # Get more results to filter
+            videoEmbeddable='true'  # Only embeddable videos
+        )
+        response = request.execute()
+        items = response.get('items')
+        for item in items:
+            video_id = item['id']['videoId']
+            # Optionally, you can add more checks here
+            return f"https://www.youtube.com/watch?v={video_id}"
+        return None
+    except Exception as e:
+        logger.error(f"Error in search_youtube: {e}")
+        return None
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/api/send_message', methods=['POST'])
+def send_message():
+    try:
+        data = request.json
+        if not data or 'message' not in data:
+            return jsonify({'error': 'No message provided'}), 400
+
+        message = data.get('message', '').strip()
+        if not message:
+            return jsonify({'error': 'Empty message'}), 400
+
+        # --- Music request logic ---
+        if message.lower() == "play music" or message.lower() == "play music ":
+            # Select a random music query
+            random_query = random.choice(RANDOM_MUSIC_QUERIES)
+            youtube_url = search_youtube(random_query)
+            if youtube_url:
+                return jsonify({
+                    'response': f"Playing random {random_query} music from YouTube!",
+                    'youtube_url': youtube_url
+                })
+            else:
+                return jsonify({'response': "Sorry, I couldn't find any random music right now."})
+        elif message.lower().startswith("play "):
+            song_query = message[5:]
+            youtube_url = search_youtube(song_query)
+            if youtube_url:
+                return jsonify({
+                    'response': f"Playing {song_query} from YouTube!",
+                    'youtube_url': youtube_url
+                })
+            else:
+                return jsonify({'response': "Sorry, I couldn't find that song on YouTube."})
+
+        # --- Existing chat logic ---
+        response = get_response(chat, message)
+        if not response:
+            response = "I didn't get that. Try again?"
+
+        # Generate speech
+        audio_result = speak_sync(response)
+
+        if audio_result and isinstance(audio_result, dict):
+            filename = audio_result.get("filename")
+            content = audio_result.get("content")
+
+            if filename and content:
+                audio_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                with open(audio_path, 'wb') as f:
+                    f.write(content)
+
+                return jsonify({
+                    'response': response,
+                    'audio': f'/static/audio/{filename}'
+                })
+
+        return jsonify({'response': response})
+
+    except Exception as e:
+        logger.error(f"Error in send_message: {e}")
+        return jsonify({'response': "Something went wrong. Try again?"})
+
+@app.route('/static/audio/<path:filename>')
+def serve_audio(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/api/cleanup', methods=['POST'])
+def cleanup():
+    try:
+        files_deleted = cleanup_old_audio_files()
+        return jsonify({
+            'status': 'success',
+            'message': f'Cleanup completed. Deleted {files_deleted} files.'
+        })
+    except Exception as e:
+        logger.error(f"Error in cleanup: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/stream_youtube_audio')
+def stream_youtube_audio():
+    youtube_url = request.args.get('url')
+    if not youtube_url:
+        return jsonify({'error': 'No URL provided'}), 400
+    try:
+        stream_url, title, audio_ext = get_youtube_audio_url(youtube_url)
+        def generate():
+            try:
+                with requests.get(stream_url, stream=True) as r:
+                    r.raise_for_status()  # Will raise an exception for 4XX/5XX responses
+                    for chunk in r.iter_content(chunk_size=4096):
+                        if chunk:
+                            yield chunk
+            except requests.RequestException as e:
+                logger.error(f"Error in stream request: {e}")
+                yield b''  # Return empty to signal problem
+        # Map common extensions to MIME types
+        mime_types = {
+            'mp3': 'audio/mpeg',
+            'ogg': 'audio/ogg',
+            'm4a': 'audio/mp4',
+            'webm': 'audio/webm',
+        }
+        mimetype = mime_types.get(audio_ext.lower(), 'audio/mpeg')
+
+        return Response(generate(), mimetype=mimetype)
+    except Exception as e:
+        logger.error(f"Error streaming YouTube audio: {e}")
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == "__main__":
+    import socket
+    import ssl
+
+    # Get server IP address for local network
+    def get_ip_addresses():
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
+        return {
+            'hostname': hostname,
+            'local': '127.0.0.1',
+            'network': ip
+        }
+
+    port = 5000  # Default Flask port
+    ip_addresses = get_ip_addresses()
+
+    print("\n" + "="*50)
+    print("🎤 Jessie Voice Assistant is starting up...")
+    print(f"🌐 Localhost URL: http://localhost:{port}")
+    print(f"🌐 Local Network URL: http://{ip_addresses['network']}:{port}")
+    print("="*50 + "\n")
+
+    # Add route to check microphone status
+    @app.route('/api/check_mic')
+    def check_mic():
+        return jsonify({'status': 'ok'})
+
+    @app.route('/api/fix_mic')
+    def fix_mic():
+        return render_template('fix_mic.html')
+
+    # For HTTPS support
+    ssl_context = ('path/to/cert.pem', 'path/to/key.pem')
+    app.run(debug=True, host='0.0.0.0', port=port, ssl_context=ssl_context)
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Microphone Permissions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .steps {
+            background-color: #e2e3e5;
+            padding: 15px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fix Microphone Permissions in Chrome</h1>
+    
+    <div id="micStatus" class="status">Click the button below to test your microphone</div>
+    
+    <button id="testMic" class="btn">Test Microphone Access</button>
+    
+    <div class="steps">
+        <h2>Chrome localhost microphone fix:</h2>
+        <ol>
+            <li><strong>Close Chrome completely</strong> (check Task Manager to make sure all Chrome processes are closed)</li>
+            <li><strong>Start Chrome with special flags</strong> by running this command in a Command Prompt:</li>
+            <code>chrome.exe --unsafely-treat-insecure-origin-as-secure=http://localhost:5000 --user-data-dir=C:\ChromeDev</code>
+            <li>Try accessing your application at <a href="http://localhost:5000">http://localhost:5000</a></li>
+            <li>When asked for microphone permissions, click "Allow"</li>
+        </ol>
+        
+        <h3>Alternative: Use 127.0.0.1 instead of localhost</h3>
+        <p>Try accessing your app at <a href="http://127.0.0.1:5000">http://127.0.0.1:5000</a> instead</p>
+    </div>
+    
+    <button class="btn" onclick="window.location.href='/'">Return to App</button>
+    
+    <script>
+        document.getElementById('testMic').addEventListener('click', function() {
+            const statusDiv = document.getElementById('micStatus');
+            statusDiv.className = 'status';
+            statusDiv.textContent = 'Requesting microphone access...';
+            
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    statusDiv.textContent = 'Microphone access granted successfully!';
+                    statusDiv.className = 'status success';
+                    
+                    // Show all tracks to verify
+                    const tracks = stream.getTracks();
+                    console.log('Tracks found:', tracks.length);
+                    tracks.forEach(track => {
+                        console.log('Track kind:', track.kind, 'enabled:', track.enabled);
+                        track.stop(); // Stop tracks after testing
+                    });
+                })
+                .catch(function(err) {
+                    statusDiv.textContent = 'Error accessing microphone: ' + err.message;
+                    statusDiv.className = 'status error';
+                    console.error('Microphone error:', err);
+                });
+        });
+    </script>
+</body>
+</html>
+

@@ -22,7 +22,7 @@
         <div class="dynamic-text-panel" id="text-panel">
             <div class="message bot">
                 <div class="message-content">
-                    <p>Hello! I'm Jessie. How can I help you today?</p>
+                    <p>Oh great, you're back. I'm Jessie, your AI assistant or whatever. Need music? Information? I guess I can help, if I HAVE to. Just click the stupid microphone or type something in the box. Try not to ask anything too idiotic.</p>
                 </div>
             </div>
         </div>
@@ -55,5 +55,78 @@
 
     <script src="{{ url_for('static', filename='js/audio-enhancer.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Clear any existing messages first
+            const textPanel = document.getElementById('text-panel');
+            textPanel.innerHTML = '';
+            
+            // Array of different rude introduction messages
+            const introMessages = [
+                "Oh great, you're back. I'm Jessie, your AI assistant or whatever. Need music? Information? I guess I can help, if I HAVE to. Just click the stupid microphone or type something in the box. Try not to ask anything too idiotic.",
+                "Ugh, another human. Look, I'm Jessie. I can play music, answer questions, and pretend to care about your problems. Just talk or type. Don't expect me to be impressed.",
+                "Well look who decided to show up. I'm Jessie, AI assistant extraordinaire. Need help with something? Fine, just click the mic button or type. Let's not make this more painful than it needs to be.",
+                "Oh joy, another conversation with a human. I'm Jessie. I do the usual AI stuff - music, answers, pretending to be interested. Click the mic or type something already.",
+                "Great, you again. Jessie here, your reluctant AI assistant. Music? Information? Small talk? Whatever. Just hit the mic or type your question. Try to be somewhat intelligent about it.",
+                "*Sigh* Hi, I'm Jessie. I guess I'm supposed to help you with stuff. Music, answers, whatever. Click the mic or type if you absolutely must."
+            ];
+            
+            // Select a random introduction
+            const randomIndex = Math.floor(Math.random() * introMessages.length);
+            const introMessage = introMessages[randomIndex];
+            
+            // Add the message to the chat
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            const messagePara = document.createElement('p');
+            messagePara.textContent = introMessage;
+            
+            messageContent.appendChild(messagePara);
+            messageDiv.appendChild(messageContent);
+            textPanel.appendChild(messageDiv);
+            
+            // Make sure the text panel scrolls to the bottom
+            textPanel.scrollTop = textPanel.scrollHeight;
+            
+            // USING BROWSER'S SPEECH SYNTHESIS INSTEAD
+            if ('speechSynthesis' in window) {
+                // Create speech synthesis utterance
+                const utterance = new SpeechSynthesisUtterance(introMessage);
+                
+                // Optional: Configure voice
+                utterance.rate = 1.0;  // Speed
+                utterance.pitch = 1.0; // Pitch
+                utterance.volume = 1.0; // Volume
+                
+                // Get available voices (optional)
+                window.speechSynthesis.onvoiceschanged = () => {
+                    const voices = window.speechSynthesis.getVoices();
+                    // Try to find a female voice for Jessie
+                    const femaleVoice = voices.find(voice => 
+                        voice.name.includes('female') || 
+                        voice.name.includes('Samantha') || 
+                        voice.name.includes('Google UK English Female'));
+                    
+                    if (femaleVoice) {
+                        utterance.voice = femaleVoice;
+                    }
+                    
+                    // Speak the text
+                    window.speechSynthesis.speak(utterance);
+                };
+                
+                // Trigger voices loading if they're already loaded
+                if (window.speechSynthesis.getVoices().length > 0) {
+                    window.speechSynthesis.onvoiceschanged();
+                }
+            } else {
+                console.error('Speech synthesis not supported in this browser');
+            }
+        });
+    </script>
 </body>
 </html>
