@@ -218,12 +218,8 @@ def stream_youtube_audio():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
-    # Use port from environment variable for Render compatibility
-    port = int(os.environ.get('PORT', 5000))
-    
-    # Disable debug mode in production
+    # Get port from environment variable or use default
+    port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
-    
-    # Run the app
-    app.run(debug=debug, host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=port, debug=debug)
 
