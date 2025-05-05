@@ -1,14 +1,17 @@
-# Jessie AI Voice Assistant
+# Jessie Assistant
 
-A voice-enabled AI assistant with a unique personality, built with Flask and Gemini AI.
+A powerful voice-enabled AI assistant built with Flask and Google's Generative AI.
+
+## Live Demo
+
+Check out the live application: [Jessie Assistant on Render](https://jessie-assistant.onrender.com)
 
 ## Features
 
-- Voice input and output
-- AI-powered responses using Gemini
-- Real-time chat interface
-- Audio file management
-- Automatic cleanup of old audio files
+- Voice recognition and natural speech responses
+- YouTube music search and playback functionality
+- AI-powered conversations via Google Generative AI
+- Web-based interface for easy interaction
 
 ## Prerequisites
 
@@ -38,6 +41,8 @@ pip install -r requirements.txt
 4. Create a `.env` file in the root directory with your Google API key:
 ```
 GOOGLE_API_KEY=your_api_key_here
+YOUTUBE_API_KEY=your_youtube_api_key_here
+PORT=8080
 ```
 
 5. Run the application:
@@ -72,10 +77,41 @@ python app.py
    - Set the environment variables in the "Web" tab under "Static files":
      ```
      GOOGLE_API_KEY=your_api_key_here
+     YOUTUBE_API_KEY=your_youtube_api_key_here
+     PORT=8080
      ```
 
 5. Reload your web app:
    - Click the "Reload" button in the "Web" tab
+
+## Deployment to Render
+
+1. Create a free account on [Render](https://render.com/)
+
+2. After logging in:
+   - Click "New" and select "Web Service"
+   - Connect your GitHub repository
+   - Select the branch you want to deploy
+
+3. Configure your web service:
+   - Give your service a name
+   - Set the Runtime to "Python 3"
+   - Set the Build Command to: `pip install -r requirements.txt`
+   - Set the Start Command to: `gunicorn app:app`
+
+4. Configure environment variables:
+   - Scroll down to the "Environment" section
+   - Add the following environment variables:
+     ```
+     GOOGLE_API_KEY=your_api_key_here
+     YOUTUBE_API_KEY=your_youtube_api_key_here
+     PORT=8080
+     ```
+
+5. Deploy your web service:
+   - Click "Create Web Service"
+   - Wait for the deployment to complete
+   - Access your app at the provided URL (e.g., https://jessie-assistant.onrender.com)
 
 ## Project Structure
 
@@ -96,13 +132,24 @@ jessie-voice-assistant/
 
 ## Technologies Used
 
-- Flask: Web framework
-- Gemini AI: AI model for responses
-- Edge TTS: Text-to-speech
-- SpeechRecognition: Speech-to-text
-- Eventlet: WebSocket support
-- Gunicorn: Production server
+- **Backend**: Flask, Python 3.11
+- **AI Integration**: Google Generative AI
+- **Voice**: Edge TTS, SpeechRecognition
+- **Deployment**: Render
+- **Media**: YouTube Search Python, yt-dlp
 
-## License
+## Deployment
 
-MIT License
+This application is deployed on [Render](https://render.com), providing reliable cloud hosting with automatic deployment from the GitHub repository.
+
+## Voice Input Tips
+
+For best microphone performance:
+
+- Use a quiet environment with minimal background noise
+- Speak clearly and at a normal volume
+- Allow microphone permissions when prompted
+- Position yourself close to your device's microphone
+- The system will automatically stop listening after silence is detected
+
+

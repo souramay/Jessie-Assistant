@@ -905,6 +905,45 @@ button:hover {
         white-space: nowrap;
         z-index: 3;
     }
+
+    /* Mobile-friendly suggestion positioning */
+    .suggestion-container {
+        position: relative;
+        width: 100%;
+        margin: 0 auto;
+        top: auto;
+        left: auto;
+        transform: none;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+        margin-bottom: 60px; /* Space before chat box */
+    }
+  
+    /* Adjust suggestion buttons to fit better on mobile */
+    .suggestion-btn {
+        margin: 5px 2px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        width: auto;
+        max-width: 90vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+  
+    /* Ensure chat box stays at the bottom without overlap */
+    .chat-container {
+        margin-top: 20px;
+        padding-bottom: 60px; /* Extra padding at bottom */
+    }
+  
+    /* Make graph container responsive */
+    .graph-container {
+        margin-bottom: 15px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1006,4 +1045,4 @@ html {
         min-width: 44px;
         min-height: 44px;
     }
-} 
+}
