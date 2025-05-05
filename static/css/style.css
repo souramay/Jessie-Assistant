@@ -415,6 +415,10 @@ input[type="text"]::placeholder {
     width: 100%;
     max-width: 600px;
     position: relative;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: none !important;
 }
 
 /* Input Buttons */
@@ -443,12 +447,17 @@ input[type="text"]::placeholder {
     transition: all 0.3s ease;
     position: relative;
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
 }
 
 .mic-button:hover, .send-button:hover {
     background: rgba(0, 0, 0, 0.8);
     transform: scale(1.1);
     box-shadow: 0 0 20px rgba(0, 229, 255, 0.7);
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .mic-button i, .send-button i {
@@ -500,6 +509,8 @@ input[type="text"]::placeholder {
     background: rgba(0, 0, 0, 0.8);
     border-color: #00E5FF;
     box-shadow: 0 0 25px rgba(0, 229, 255, 0.9);
+    border-color: rgba(0, 229, 255, 0.5) !important;
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2) !important;
 }
 
 .mic-button.active i {
@@ -509,9 +520,9 @@ input[type="text"]::placeholder {
 
 /* Error state for mic button */
 .mic-button.error {
-    background: rgba(0, 0, 0, 0.8);
-    border-color: #ff4444;
-    box-shadow: 0 0 25px rgba(255, 68, 68, 0.8);
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-color: rgba(255, 68, 68, 0.7) !important;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.3) !important;
 }
 
 .mic-button.error i {
@@ -538,6 +549,7 @@ input[type="text"]::placeholder {
     max-width: 600px;
     margin: 20px 0;
     position: relative;
+    background: transparent !important;
 }
 
 /* Message Content */
@@ -743,15 +755,88 @@ button:hover {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    /* Adjust container to start with chat box */
     .container {
-        padding: 10px;
-        gap: 10px;
+        padding: 10px 10px 90px;
         height: 100vh;
         overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+        justify-content: flex-start;
         display: flex;
         flex-direction: column;
+    }
+
+    /* Make chat box appear first */
+    .dynamic-text-panel {
+        order: 1;
+        padding: 15px;
+        min-height: 120px;
+        max-height: 40vh;
+        margin: 10px 0;
+        overflow-y: auto;
+        flex: 1;
         position: relative;
+        z-index: 1;
+    }
+
+    /* Position suggestion container between chat and wave */
+    .suggestion-container {
+        order: 2;
+        position: relative;
+        width: 100%;
+        height: auto;
+        margin: 10px 0;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        pointer-events: auto;
+        z-index: 10;
+        /* Remove fixed positioning */
+        top: auto;
+        left: auto;
+        transform: none;
+    }
+
+    /* Position voice wave after suggestions */
+    .voice-wave-container {
+        order: 3;
+        height: 100px;
+        max-width: 200px;
+        margin: 10px auto 20px;
+    }
+
+    /* Make suggestion buttons more visible */
+    .suggestion-btn {
+        margin: 5px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        background: rgba(0, 229, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 45%;
+    }
+
+    /* Keep input at bottom */
+    .input-container {
+        order: 4;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .container {
+        padding: 10px 10px 90px; /* Increase bottom padding to avoid overlap with input */
+        height: 100vh;
+        overflow-y: auto;
+        justify-content: flex-start; /* Align content to top */
     }
 
     .dynamic-text-panel {
@@ -774,30 +859,12 @@ button:hover {
     }
 
     .suggestion-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        position: static; /* Change from fixed/relative to static for normal document flow */
+        height: auto;
+        margin: 10px 0;
+        padding: 5px;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: none;
-        z-index: 2;
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
-    }
-
-    .suggestion {
-        font-size: 0.9em;
-        max-width: 140px;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) translateZ(0);
-        -webkit-transform: translate(-50%, -50%) translateZ(0);
-        background: transparent;
-        color: rgba(255, 255, 255, 0.9);
+        flex-wrap: wrap; /* Allow suggestions to wrap */
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         padding: 0;
         text-align: center;
@@ -809,6 +876,21 @@ button:hover {
         will-change: transform;
         font-weight: 500;
         letter-spacing: 0.5px;
+    }
+
+    .suggestion-btn {
+        margin: 4px;
+        padding: 8px 10px;
+        border-radius: 15px;
+        font-size: 0.85rem;
+        background: rgba(0, 229, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 45%; /* Allow two buttons per row */
+        min-height: 36px;
     }
 
     .input-container {
@@ -944,6 +1026,47 @@ button:hover {
     .graph-container {
         margin-bottom: 15px;
     }
+
+    /* Ensure proper structure */
+    .voice-wave-container {
+        margin: 5px auto 15px;
+    }
+
+    /* Fix input container to bottom */
+    .input-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+        z-index: 1000;
+    }
+
+    /* Ensure chat container doesn't overlap with input */
+    .dynamic-text-panel {
+        margin-bottom: 20px;
+        max-height: 40vh;
+    }
+
+    /* Improve chat bubble design */
+    .message-content {
+        max-width: 85%;
+        word-break: break-word;
+        padding: 12px 15px;
+        margin-bottom: 12px;
+        border-radius: 18px 18px 18px 4px;
+    }
+  
+    .message.user .message-content {
+        border-radius: 18px 18px 4px 18px;
+        margin-left: auto;
+        background: rgba(0, 229, 255, 0.25);
+    }
+  
+    .message.bot .message-content {
+        background: rgba(255, 255, 255, 0.15);
+    }
 }
 
 @media (max-width: 480px) {
@@ -1000,6 +1123,12 @@ button:hover {
     .mic-button i, .send-button i {
         font-size: 16px;
     }
+
+    .suggestion-btn {
+        font-size: 0.8rem;
+        padding: 6px 8px;
+        margin: 3px;
+    }
 }
 
 /* Fix for iOS Safari */
@@ -1045,4 +1174,1094 @@ html {
         min-width: 44px;
         min-height: 44px;
     }
+}
+
+/* Mobile-optimized layout */
+@media (max-width: 768px) {
+    .container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 10px 10px 70px;
+        justify-content: space-between;
+    }
+    
+    /* Chat box style - top position */
+    .dynamic-text-panel {
+        margin: 10px auto;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 15px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        order: 1;
+        flex: 1;
+        overflow-y: auto;
+        max-height: 50vh;
+    }
+    
+    /* Position suggestions below chat */
+    .suggestion-container {
+        order: 2;
+        position: relative;
+        top: auto;
+        left: auto;
+        transform: none;
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 10px 0;
+        z-index: 10;
+    }
+    
+    /* Voice wave between suggestions and input */
+    .voice-wave-container {
+        order: 3;
+        margin: 10px auto;
+        position: relative;
+    }
+    
+    /* Input fixed at bottom */
+    .hybrid-input-section {
+        order: 4;
+        width: 100%;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        z-index: 1000;
+    }
+    
+    /* Better input styling */
+    .input-container {
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        padding: 10px;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Make suggestion buttons look better */
+    .suggestion-btn {
+        margin: 5px;
+        padding: 8px 12px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(5px);
+        border: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+}
+
+/* Fix suggestion buttons on mobile */
+@media (max-width: 768px) {
+  .suggestion-container {
+    position: static;
+    height: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 5px 0 15px;
+    padding: 0 10px;
+    gap: 8px;
+  }
+  
+  .suggestion-btn {
+    background: rgba(0, 229, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    margin: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    gap: 12px;
+    padding: 12px 10px 80px;
+  }
+  
+  .dynamic-text-panel {
+    margin-top: 15px;
+    min-height: 100px;
+    max-height: 45vh;
+  }
+  
+  .voice-wave-container {
+    height: 80px;
+    margin: 0 auto 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .input-container {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+  }
+  
+  input[type="text"] {
+    background: rgba(255, 255, 255, 0.15);
+    height: 44px;
+  }
+  
+  .mic-button, .send-button {
+    background: rgba(0, 229, 255, 0.2);
+  }
+}
+
+/* Move wave visualization up between chat and suggestions */
+@media (max-width: 768px) {
+  /* Reorder the elements */
+  .dynamic-text-panel { order: 1; }
+  .voice-wave-container { order: 2; }
+  .suggestion-container { order: 3; }
+  .hybrid-input-section { order: 4; }
+  
+  /* Position wave better */
+  .voice-wave-container {
+    margin: 15px auto;
+    height: 70px;
+    max-width: 180px;
+  }
+  
+  /* Fix microphone status text position */
+  .mic-status {
+    position: absolute;
+    top: -30px; /* Position above instead of below */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    white-space: nowrap;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 8px;
+    border-radius: 10px;
+    z-index: 1001; /* Ensure it's above other elements */
+  }
+  
+  /* Ensure mic button has proper positioning context */
+  .mic-button {
+    position: relative;
+  }
+}
+
+/* Fix mobile layout issues */
+@media (max-width: 768px) {
+  /* Fix spacing and overall layout */
+  .container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 10px 10px 80px;
+    gap: 10px;
+  }
+  
+  /* More compact chat panel */
+  .dynamic-text-panel {
+    margin-bottom: 10px;
+    max-height: 40vh;
+    min-height: 100px;
+  }
+  
+  /* Make voice wave more visible */
+  .voice-wave-container {
+    margin: 15px auto;
+    height: 80px;
+    max-width: 85%;
+    order: 3; /* Show after suggestions */
+  }
+  
+  /* Make wave lines more visible */
+  .wave::before, .wave::after,
+  .wave .wave-line-1, .wave .wave-line-2, .wave .wave-line-3 {
+    height: 3px !important;
+    background: #00E5FF !important;
+    opacity: 0.8 !important;
+    box-shadow: 0 0 10px #00E5FF !important;
+  }
+  
+  /* Show suggestions properly */
+  .suggestion-container {
+    position: relative;
+    order: 2;
+    height: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0;
+    padding: 10px 5px;
+  }
+  
+  /* Style suggestion buttons */
+  .suggestion-btn {
+    display: inline-block !important;
+    margin: 4px;
+    padding: 8px 15px;
+    background: rgba(0, 229, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    color: white;
+    font-size: 14px;
+    opacity: 1;
+  }
+  
+  /* Fix microphone permission error */
+  .mic-button.error {
+    background: rgba(255, 68, 68, 0.4);
+    border-color: rgba(255, 68, 68, 0.8);
+  }
+  
+  .mic-status.error {
+    color: #ff4444;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    top: -30px;
+  }
+}
+
+/* Add to your style.css file */
+
+/* Fix mobile layout */
+@media (max-width: 768px) {
+    /* Layout structure */
+    .container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 10px 10px 80px;
+        gap: 0;
+        justify-content: flex-start;
+    }
+    
+    /* Chat box style */
+    .dynamic-text-panel {
+        order: 1;
+        width: 100%;
+        margin: 10px auto;
+        max-height: 45vh; 
+        overflow-y: auto;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 15px;
+        padding: 15px;
+        flex-shrink: 0;
+    }
+    
+    /* Suggestions positioning */
+    .suggestion-container {
+        order: 2;
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 15px 0;
+        padding: 0;
+        gap: 8px;
+        width: 100%;
+        transform: none;
+    }
+    
+    /* Style suggestion buttons */
+    .suggestion {
+        position: static !important;
+        display: inline-block !important;
+        margin: 4px;
+        padding: 8px 14px;
+        background: rgba(0, 229, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        font-size: 14px;
+        opacity: 0.8 !important;
+        transform: none !important;
+    }
+    
+    /* Voice wave adjustments */
+    .voice-wave-container {
+        order: 3;
+        height: 60px;
+        margin: 10px auto;
+        max-width: 90%;
+    }
+    
+    /* Make wave more visible */
+    .wave-line-1, .wave-line-2, .wave-line-3 {
+        background-color: rgba(0, 229, 255, 0.7) !important;
+        height: 2px !important;
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.6) !important;
+    }
+    
+    /* Fix input bar */
+    .input-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 15px;
+        z-index: 1000;
+    }
+    
+    /* Better microphone styling */
+    .mic-button {
+        position: relative;
+    }
+    
+    .mic-status {
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.7);
+        padding: 5px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 100;
+    }
+    
+    /* Fix status for error state */
+    .mic-button.error {
+        background: rgba(255, 68, 68, 0.4);
+    }
+    
+    .mic-status.error {
+        color: #ff4444;
+    }
+}
+
+/* Mobile-optimized layout - add this at the end of your file */
+@media (max-width: 768px) {
+  /* Fix overall layout structure */
+  .container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 15px 15px 80px;
+    justify-content: flex-start;
+  }
+  
+  /* Position elements in the correct order */
+  .dynamic-text-panel { order: 1; margin-bottom: 5px; }
+  .suggestion-container { order: 2; position: static; }
+  .voice-wave-container { order: 3; margin: 5px auto 15px; }
+  
+  /* Style the chat panel */
+  .dynamic-text-panel {
+    max-height: 45vh;
+    min-height: 100px;
+    width: 100%;
+    margin: 0 0 15px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+  }
+  
+  /* Fix suggestions to appear between chat and wave */
+  .suggestion-container {
+    height: auto;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    z-index: 10;
+    transform: none;
+    margin: 0 0 10px;
+  }
+  
+  /* Style each suggestion as a button */
+  .suggestion {
+    position: static !important;
+    opacity: 0.9 !important;
+    animation: none !important;
+    background: rgba(0, 229, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    padding: 8px 14px;
+    margin: 3px;
+    font-size: 14px;
+    color: white;
+    transform: none !important;
+    pointer-events: auto;
+    max-width: none;
+  }
+  
+  /* Make voice wave more visible */
+  .voice-wave-container {
+    height: 60px;
+    width: 85%;
+  }
+  
+  .wave-line-1, .wave-line-2, .wave-line-3,
+  .wave::before, .wave::after {
+    background-color: rgba(0, 229, 255, 0.7) !important;
+    height: 2px !important;
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.8) !important;
+  }
+  
+  /* Fix input container */
+  .input-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    z-index: 1000;
+  }
+  
+  /* Fix mic status overlay */
+  .mic-button {
+    position: relative;
+  }
+  
+  .mic-status {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    white-space: nowrap;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 8px;
+    border-radius: 10px;
+    z-index: 1001;
+  }
+  
+  /* Fix microphone error state */
+  .mic-button.error {
+    background: rgba(255, 0, 0, 0.2);
+    border-color: rgba(255, 0, 0, 0.5);
+  }
+  
+  .mic-status.error {
+    color: #ff4444;
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Mobile layout fixes - add at the end of your style.css file */
+@media (max-width: 768px) {
+  /* Structure */
+  .container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 10px 10px 80px;
+    gap: 10px;
+  }
+  
+  /* Change element order */
+  .dynamic-text-panel { order: 1; }
+  .suggestion-container { order: 3; }
+  .voice-wave-container { order: 2; }
+  
+  /* Fix suggestion container */
+  .suggestion-container {
+    position: static !important;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 10px 0;
+    transform: none !important;
+    z-index: 10;
+  }
+  
+  /* Fix suggestion buttons */
+  .suggestion {
+    position: static !important;
+    display: inline-block !important;
+    transform: none !important;
+    opacity: 1 !important;
+    animation: none !important;
+    background: rgba(0, 229, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    padding: 8px 15px;
+    margin: 5px;
+    font-size: 14px;
+    color: white;
+    pointer-events: auto;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    max-width: none;
+    width: auto;
+    min-height: 36px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  
+  /* Fix microphone status */
+  .mic-status.error {
+    color: #ff4444;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 4px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    position: absolute;
+    top: -30px;
+    white-space: nowrap;
+  }
+  
+  /* Fix input container */
+  .input-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 10px;
+    z-index: 1000;
+  }
+}
+
+/* Fix black box over microphone */
+.mic-button {
+    position: relative;
+    overflow: visible; /* Prevent clipping of status text */
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.2);  /* Lighter background */
+}
+
+.mic-button.error {
+    background: rgba(255, 68, 68, 0.4);  /* Red background for error */
+    border-color: rgba(255, 68, 68, 0.6);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.mic-button.error::before {
+    content: none !important;  /* Remove any pseudo-element that might create overlay */
+}
+
+.mic-button.error i {
+    color: #ffffff;  /* Make icon visible */
+}
+
+/* Make error state more visible without black box */
+#mic-status.error {
+    background: rgba(255, 0, 0, 0.2);
+    border: 1px solid rgba(255, 0, 0, 0.4);
+    padding: 3px 8px;
+    color: #fff;
+}
+
+/* Remove any auto-added error styles */
+[style*="not-allowed"],
+*:not-allowed,
+.error::before {
+    display: none !important;
+    background: transparent !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Fix microphone not-allowed cursor and black box */
+.mic-button {
+  cursor: pointer !important; /* Force pointer cursor */
+  position: relative;
+}
+
+/* Remove any not-allowed cursors throughout the app */
+*[style*="cursor: not-allowed"],
+*[style*="cursor:not-allowed"] {
+  cursor: pointer !important;
+}
+
+/* Fix microphone error styling */
+.mic-button.error {
+  background: rgba(255, 68, 68, 0.3) !important;
+  border: 1px solid rgba(255, 68, 68, 0.6) !important;
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.2) !important;
+}
+
+/* Remove black overlay from microphone button */
+.mic-button::before,
+.mic-button::after {
+  display: none !important;
+}
+
+/* Make error message visible but not intrusive */
+.mic-status.error {
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: #ff4444 !important;
+  border: 1px solid rgba(255, 68, 68, 0.5) !important;
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  border-radius: 12px !important;
+  z-index: 2000 !important;
+}
+
+/* Fix black overlay on microphone button */
+.mic-button, .mic-button.error {
+  position: relative;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+/* Remove the not-allowed cursor */
+.mic-button[style*="cursor"] {
+  cursor: pointer !important;
+}
+
+/* Hide browser's default overlay */
+:not-allowed::before,
+:not-allowed::after,
+#mic-button::before,
+#mic-button::after {
+  display: none !important;
+  content: none !important;
+  background: transparent !important;
+}
+
+/* Make mic status appear as plain text */
+#mic-status {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: #00E5FF;
+  text-shadow: 0 0 4px rgba(0, 229, 255, 0.6);
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+/* Error state */
+#mic-status.error {
+  color: #ff4444;
+  text-shadow: 0 0 4px rgba(255, 68, 68, 0.6);
+}
+
+/* Make input container and buttons transparent */
+.input-container {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+/* Make buttons transparent */
+.mic-button, .send-button, #keyboard-toggle {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: none !important;
+}
+
+/* Subtle hover effect */
+.mic-button:hover, .send-button:hover, #keyboard-toggle:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Active state for mic */
+.mic-button.active {
+  border-color: rgba(0, 229, 255, 0.5) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2) !important;
+}
+
+/* Fix any other containers that might add backgrounds */
+.hybrid-input-section, 
+.input-row {
+  background: transparent !important;
+}
+
+/* Make input field slightly visible but mostly transparent */
+input[type="text"] {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Fix mobile specific styles */
+@media (max-width: 768px) {
+  .input-container {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Make keyboard, mic, and enter buttons black */
+.mic-button, .send-button, #keyboard-toggle {
+  background: rgba(0, 0, 0, 0.7) !important; /* Black with slight transparency */
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Adjust hover effect for black buttons */
+.mic-button:hover, .send-button:hover, #keyboard-toggle:hover {
+  background: rgba(0, 0, 0, 0.9) !important; /* Darker black on hover */
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Active state for mic */
+.mic-button.active {
+  background: rgba(0, 0, 0, 0.8) !important;
+  border-color: rgba(0, 229, 255, 0.7) !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3) !important;
+}
+
+/* Error state for mic */
+.mic-button.error {
+  background: rgba(0, 0, 0, 0.7) !important;
+  border-color: rgba(255, 68, 68, 0.7) !important;
+  box-shadow: 0 0 10px rgba(255, 68, 68, 0.3) !important;
+}
+
+/* Floating suggestions for desktop */
+@media (min-width: 769px) {
+  /* Reset container to cover the screen */
+  .suggestion-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block; /* Changed from flex to allow absolute positioning */
+    pointer-events: none;
+    z-index: 5;
+  }
+  
+  /* Style individual suggestions */
+  .suggestion {
+    position: absolute;
+    background: rgba(0, 229, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 10px 16px;
+    color: white;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 200px;
+    text-align: center;
+    pointer-events: auto; /* Make clickable */
+    cursor: pointer;
+    animation: float 15s infinite ease-in-out;
+    transition: all 0.3s ease;
+  }
+  
+  /* Create different starting positions and timings */
+  .suggestion:nth-child(1) { top: 15%; left: 10%; animation-delay: 0s; }
+  .suggestion:nth-child(2) { top: 25%; right: 15%; animation-delay: 2s; }
+  .suggestion:nth-child(3) { top: 65%; left: 20%; animation-delay: 4s; }
+  .suggestion:nth-child(4) { top: 40%; right: 18%; animation-delay: 1s; }
+  .suggestion:nth-child(5) { top: 75%; right: 25%; animation-delay: 3s; }
+  
+  /* Avoid lower part of screen where input is */
+  .suggestion { bottom: min(30%, 250px); }
+  
+  /* Hover effect */
+  .suggestion:hover {
+    transform: scale(1.05);
+    background: rgba(0, 229, 255, 0.25);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Floating animation */
+  @keyframes float {
+    0% { transform: translateY(0) translateX(0); }
+    25% { transform: translateY(-10px) translateX(5px); }
+    50% { transform: translateY(0) translateX(10px); }
+    75% { transform: translateY(10px) translateX(5px); }
+    100% { transform: translateY(0) translateX(0); }
+  }
+  
+  /* Make suggestion buttons look nicer */
+  .suggestion-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 0;
+    font-size: inherit;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+  }
+}
+
+/* Make ALL buttons black - add this at the very end of your CSS file */
+#keyboard-toggle,
+.keyboard-toggle,
+button#keyboard-toggle,
+.input-buttons #keyboard-toggle,
+.hybrid-input-section .input-container .keyboard-toggle {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Fix hover state for keyboard button */
+#keyboard-toggle:hover,
+.keyboard-toggle:hover {
+  background: rgba(0, 0, 0, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Fix keyboard toggle icon color */
+#keyboard-toggle i,
+.keyboard-toggle i {
+  color: #00E5FF !important;
+}
+
+/* Fix suggestions visibility - add to the end of your CSS file */
+@media (max-width: 768px) {
+  /* Mobile suggestions */
+  .suggestion-container {
+    position: static;
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    padding: 5px;
+    width: 100%;
+    margin: 10px 0;
+    height: auto;
+  }
+  
+  .suggestion {
+    position: static !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(0, 229, 255, 0.4) !important;
+    border-radius: 20px;
+    padding: 8px 15px;
+    margin: 4px;
+    font-size: 14px;
+    color: white;
+    display: inline-block !important;
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* Mobile-specific translucent input container */
+@media (max-width: 768px) {
+  .input-container {
+    background: rgba(0, 0, 0, 0.35) !important; /* Semi-transparent black */
+    backdrop-filter: blur(8px) !important; /* Glass effect */
+    -webkit-backdrop-filter: blur(8px) !important; /* For Safari */
+    border: 1px solid rgba(255, 255, 255, 0.15) !important; /* Subtle border */
+    border-radius: 18px !important; /* Rounded corners */
+    margin: 5px 5px 10px !important; /* Add spacing around */
+    width: calc(100% - 10px) !important; /* Account for margins */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important; /* Subtle shadow */
+    position: fixed;
+    bottom: 10px;
+    left: 0;
+    z-index: 100;
+  }
+  
+  /* Ensure buttons remain black against translucent background */
+  .mic-button, .send-button, #keyboard-toggle {
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  /* Make text input field match the aesthetic */
+  #user-input {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+  }
+  
+  /* Add some bottom padding to prevent content from being hidden */
+  body {
+    padding-bottom: 70px !important;
+  }
+}
+
+/* Fix Desktop Suggestions - add to the end of your style.css file */
+@media (min-width: 769px) {
+  /* Reset container to cover the screen */
+  .suggestion-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    z-index: 5;
+  }
+  
+  /* Style individual suggestions */
+  .suggestion {
+    position: absolute;
+    background: rgba(0, 229, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 10px 16px;
+    color: white;
+    font-size: 0.9rem;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    max-width: 250px;
+    text-align: center;
+    pointer-events: auto;
+    cursor: pointer;
+    opacity: 0.9 !important; /* Force visibility */
+    transform: translateZ(0); /* Hardware acceleration */
+    display: block !important; /* Force display */
+    visibility: visible !important; /* Ensure visibility */
+    user-select: none;
+  }
+  
+  /* Create different starting positions */
+  .suggestion:nth-child(1) { top: 20%; left: 15%; }
+  .suggestion:nth-child(2) { top: 35%; right: 20%; }
+  .suggestion:nth-child(3) { top: 60%; left: 25%; }
+  .suggestion:nth-child(4) { top: 45%; right: 25%; }
+  .suggestion:nth-child(5) { top: 75%; right: 30%; }
+  
+  /* Add subtle floating animation for each one */
+  .suggestion:nth-child(1) { animation: float1 8s infinite ease-in-out; }
+  .suggestion:nth-child(2) { animation: float2 9s infinite ease-in-out; }
+  .suggestion:nth-child(3) { animation: float3 10s infinite ease-in-out; }
+  .suggestion:nth-child(4) { animation: float4 11s infinite ease-in-out; }
+  .suggestion:nth-child(5) { animation: float5 12s infinite ease-in-out; }
+  
+  /* Define unique floating animations */
+  @keyframes float1 {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(-10px) translateX(5px); }
+  }
+  
+  @keyframes float2 {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(8px) translateX(-5px); }
+  }
+  
+  @keyframes float3 {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(-12px) translateX(-7px); }
+  }
+  
+  @keyframes float4 {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(10px) translateX(8px); }
+  }
+  
+  @keyframes float5 {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(-8px) translateX(10px); }
+  }
+  
+  /* Hover effect */
+  .suggestion:hover {
+    transform: scale(1.05);
+    background: rgba(0, 229, 255, 0.25);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+  }
+}
+
+/* Make desktop suggestions match mobile style */
+@media (min-width: 769px) {
+  /* Reset suggestion container to be fixed position below chat */
+  .suggestion-container {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    height: auto !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    padding: 15px 0 !important;
+    margin: 10px 0 !important;
+    pointer-events: auto !important;
+    z-index: 5;
+  }
+  
+  /* Style suggestions like mobile buttons */
+  .suggestion {
+    position: static !important;
+    display: inline-block !important;
+    transform: none !important;
+    animation: none !important;
+    opacity: 1 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(0, 229, 255, 0.4) !important;
+    border-radius: 20px !important;
+    padding: 10px 18px !important;
+    margin: 5px !important;
+    font-size: 15px !important;
+    color: white !important;
+    max-width: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  /* Hover effect */
+  .suggestion:hover {
+    background: rgba(0, 229, 255, 0.2) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3) !important;
+  }
+  
+  /* Adjust container layout */
+  .container {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .dynamic-text-panel { order: 1; }
+  .suggestion-container { order: 2; }
+  .voice-wave-container { order: 3; }
+}
+
+/* Position input container at bottom for desktop */
+@media (min-width: 769px) {
+  /* Fixed input container at bottom */
+  .input-container, 
+  .hybrid-input-section .input-container {
+    position: fixed !important;
+    bottom: 15px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 80% !important;
+    max-width: 600px !important;
+    padding: 12px 15px !important;
+    border-radius: 30px !important;
+    background: rgba(0, 0, 0, 0.35) !important;
+    backdrop-filter: blur(8px) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+    z-index: 1000 !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    margin: 0 !important;
+  }
+  
+  /* Add padding to prevent content from being hidden behind input */
+  .container {
+    padding-bottom: 90px !important;
+  }
+  
+  /* Ensure the text box doesn't get pushed down */
+  .dynamic-text-panel {
+    margin-bottom: 20px !important;
+    max-height: calc(70vh - 200px) !important;
+  }
+  
+  /* Make black buttons more visible against the translucent background */
+  .mic-button, .send-button, #keyboard-toggle {
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  }
 }

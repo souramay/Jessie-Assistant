@@ -25,19 +25,29 @@ document.addEventListener('DOMContentLoaded', () => {
         "Try asking for a random fact"
     ];
 
+    // Clear and simple suggestion update function
     function updateSuggestions() {
-        const suggestionElements = suggestionContainer.querySelectorAll('.suggestion');
-        const shuffled = [...suggestions].sort(() => 0.5 - Math.random());
+        // Clear existing suggestions
+        const suggestionContainer = document.getElementById('suggestion-container');
+        if (!suggestionContainer) return;
         
-        suggestionElements.forEach((element, index) => {
-            element.textContent = shuffled[index];
-            const top = Math.random() * 20 + 5;
-            const left = Math.random() * 20 + 5;
-            element.style.top = `${top}%`;
-            element.style.left = `${left}%`;
-            element.style.opacity = '0';
-            element.offsetHeight;
-            element.style.opacity = '0.6';
+        suggestionContainer.innerHTML = '';
+        
+        // Get random suggestions (3-5 depending on screen size)
+        const count = window.innerWidth > 768 ? 5 : 3;
+        const shuffled = [...suggestions].sort(() => 0.5 - Math.random()).slice(0, count);
+        
+        // Create and append suggestion elements
+        shuffled.forEach(text => {
+            const suggestion = document.createElement('div');
+            suggestion.className = 'suggestion';
+            suggestion.textContent = text;
+            suggestion.addEventListener('click', () => {
+                document.getElementById('user-input').value = text;
+                // Trigger send if needed
+                document.getElementById('send-button').click();
+            });
+            suggestionContainer.appendChild(suggestion);
         });
     }
 
@@ -471,4 +481,258 @@ if ('webkitSpeechRecognition' in window) {
         document.querySelector('.dynamic-text-panel').appendChild(playerDiv);
         addMessage('Playing YouTube video in browser.', 'bot');
     }
+
+    // Add near the top of your main.js file, in the DOMContentLoaded function
+    function setupMicrophonePermissions() {
+        micButton.addEventListener('click', async () => {
+            try {
+                // Request microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop()); // Just testing permission
+                
+                // Remove error state
+                micButton.classList.remove('error');
+                micStatus.classList.remove('error');
+                
+                // Toggle recognition if it exists
+                if (recognition) {
+                    if (shouldListen) {
+                        shouldListen = false;
+                        recognition.stop();
+                        micStatus.textContent = 'Microphone ready';
+                        voiceWave.classList.remove('active');
+                    } else {
+                        shouldListen = true;
+                        recognition.start();
+                        micStatus.textContent = 'Listening...';
+                        voiceWave.classList.add('active');
+                    }
+                } else {
+                    micStatus.textContent = 'Speech recognition unavailable';
+                }
+            } catch (error) {
+                // Handle permission errors
+                console.error('Microphone error:', error);
+                micButton.classList.add('error');
+                micStatus.classList.add('error');
+                micStatus.textContent = "Microphone access denied";
+            }
+        });
+    }
+
+    // Call this function at the end of your DOMContentLoaded
+    setupMicrophonePermissions();
+
+    // Clean up all microphone handlers and replace with a single one
+    function cleanupMicHandlers() {
+        // Remove the button and create a fresh copy to remove all event listeners
+        const oldMic = document.getElementById('mic-button');
+        const newMic = oldMic.cloneNode(true);
+        oldMic.parentNode.replaceChild(newMic, oldMic);
+        
+        // Re-get the mic button and status elements
+        const micButton = document.getElementById('mic-button');
+        const micStatus = document.getElementById('mic-status');
+        
+        // Add a single clean event handler
+        micButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Request permission explicitly
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    // Just testing permission
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    // Clear error state
+                    micButton.classList.remove('error');
+                    micStatus.classList.remove('error');
+                    
+                    // Toggle recognition
+                    if (recognition) {
+                        if (shouldListen) {
+                            shouldListen = false;
+                            recognition.stop();
+                            voiceWave.classList.remove('active');
+                            micStatus.textContent = "Microphone ready";
+                        } else {
+                            shouldListen = true;
+                            recognition.start();
+                            voiceWave.classList.add('active'); 
+                            micStatus.textContent = "Listening...";
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error("Microphone error:", error);
+                    micButton.classList.add('error');
+                    micStatus.classList.add('error');
+                    micStatus.textContent = "Microphone access denied";
+                });
+        });
+    }
+
+    // Call at the end
+    cleanupMicHandlers();
 });
+
+// Add this to your main.js file (after all variable declarations)
+
+function fixMicrophonePermissions() {
+  // Check if browser supports getUserMedia
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    console.log("Browser doesn't support getUserMedia");
+    micButton.classList.add('error');
+    micStatus.classList.add('error');
+    micStatus.textContent = "Microphone not supported";
+    return;
+  }
+
+  // Handle mic button clicks
+  micButton.addEventListener('click', function(event) {
+    // Prevent any default behavior
+    event.preventDefault();
+    
+    // Request microphone access
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function(stream) {
+        // Permission granted - stop tracks immediately (we just want to check permission)
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Remove error state
+        micButton.classList.remove('error');
+        micStatus.classList.remove('error');
+        micStatus.textContent = "Listening...";
+        
+        // Continue with normal mic button behavior (recognition, etc.)
+        if (recognition) {
+          if (!shouldListen) {
+            shouldListen = true;
+            recognition.start();
+          } else {
+            shouldListen = false;
+            recognition.stop();
+            micStatus.textContent = "Microphone ready";
+          }
+        }
+      })
+      .catch(function(err) {
+        // Permission denied or error
+        console.error("Microphone error:", err);
+        micButton.classList.add('error');
+        micStatus.classList.add('error');
+        micStatus.textContent = "Microphone access denied";
+      });
+  });
+}
+
+// Call this function when the document is loaded
+document.addEventListener('DOMContentLoaded', fixMicrophonePermissions);
+
+// Only run one microphone handler cleanup to avoid conflicts
+document.addEventListener('DOMContentLoaded', function() {
+  // Wait for everything to load
+  setTimeout(function() {
+    // Get the mic button and completely remove all event listeners
+    const oldMic = document.getElementById('mic-button');
+    const newMic = oldMic.cloneNode(true);
+    oldMic.parentNode.replaceChild(newMic, oldMic);
+    
+    // Get the new references
+    const micButton = document.getElementById('mic-button');
+    const micStatus = document.getElementById('mic-status');
+    
+    // Add just one clean handler
+    micButton.addEventListener('click', function(event) {
+      event.stopPropagation();
+      event.preventDefault();
+      
+      navigator.mediaDevices.getUserMedia({audio: true})
+        .then(function(stream) {
+          stream.getTracks().forEach(track => track.stop());
+          
+          // Handle recognition state
+          if (recognition) {
+            if (shouldListen) {
+              shouldListen = false;
+              recognition.stop();
+              voiceWave.classList.remove('active');
+              micStatus.textContent = "Microphone ready";
+            } else {
+              shouldListen = true;
+              recognition.start();
+              voiceWave.classList.add('active');
+              micStatus.textContent = "Listening...";
+            }
+          }
+        })
+        .catch(function(err) {
+          console.error("Microphone permission denied:", err);
+          micStatus.textContent = "Access denied";
+          micStatus.classList.add('error');
+        });
+    });
+  }, 500);
+});
+
+// Make sure to add these lines to your main.js
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize suggestions
+  updateSuggestions();
+  
+  // Update suggestions every 30 seconds
+  setInterval(updateSuggestions, 30000);
+});
+
+// Single clean microphone handler - replaces all others
+function setupMicrophoneHandler() {
+  // Remove any existing handlers
+  const newMicButton = document.getElementById('mic-button').cloneNode(true);
+  document.getElementById('mic-button').parentNode.replaceChild(newMicButton, document.getElementById('mic-button'));
+  
+  // Get fresh references
+  const micButton = document.getElementById('mic-button');
+  const micStatus = document.getElementById('mic-status');
+  const voiceWave = document.querySelector('.voice-wave');
+  
+  // Add single handler
+  micButton.addEventListener('click', function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    navigator.mediaDevices.getUserMedia({audio: true})
+      .then(function(stream) {
+        // Stop tracks immediately (just testing permission)
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Clear error states
+        micButton.classList.remove('error');
+        micStatus.classList.remove('error');
+        
+        // Toggle recognition
+        if (recognition) {
+          if (shouldListen) {
+            shouldListen = false;
+            recognition.stop();
+            voiceWave.classList.remove('active');
+            micStatus.textContent = "Microphone ready";
+          } else {
+            shouldListen = true;
+            recognition.start();
+            voiceWave.classList.add('active');
+            micStatus.textContent = "Listening...";
+          }
+        }
+      })
+      .catch(function(err) {
+        console.error("Microphone permission denied:", err);
+        micButton.classList.add('error');
+        micStatus.classList.add('error');
+        micStatus.textContent = "Access denied";
+      });
+  });
+}
+
+// Call this at document load
+document.addEventListener('DOMContentLoaded', setupMicrophoneHandler);
