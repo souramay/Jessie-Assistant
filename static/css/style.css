@@ -930,6 +930,10 @@ button:hover {
         -webkit-tap-highlight-color: transparent;
         user-select: text;
         -webkit-user-select: text;
+        user-select: text;
+        user-select: text;
+        user-select: text;
+        user-select: text;
         -moz-user-select: text;
         -ms-user-select: text;
         touch-action: manipulation;
