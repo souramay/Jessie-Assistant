@@ -403,6 +403,35 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage('Playing YouTube video in browser.', 'bot');
     }
 
+    // Auto-start microphone on page load
+    function autoStartMicrophone() {
+        console.log("Auto-starting microphone...");
+        
+        // Request microphone permission
+        navigator.mediaDevices.getUserMedia({audio: true})
+          .then(stream => {
+            // Stop the stream - we just needed permission
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Start recognition if available
+            if (recognition) {
+              shouldListen = true;
+              recognition.start();
+              voiceWave.classList.add('active');
+              micStatus.textContent = "Listening...";
+              micButton.classList.add('active');
+            }
+          })
+          .catch(err => {
+            console.error("Could not auto-start microphone:", err);
+            // Don't show error state immediately to avoid scaring users
+            micStatus.textContent = "Click to enable mic";
+          });
+    }
+    
+    // Call auto-start after a brief delay to let the page finish loading
+    setTimeout(autoStartMicrophone, 1500);
+
     // Initialize keyboard visibility
     keyboardContainer.style.display = 'none';
 });
