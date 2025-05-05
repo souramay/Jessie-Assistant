@@ -440,12 +440,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function playYouTubeStream(youtubeUrl) {
-        const audio = new Audio(`/api/stream_youtube_audio?url=${encodeURIComponent(youtubeUrl)}`);
-        audio.play().catch(e => console.error('Error playing YouTube stream:', e));
-        addMessage('Playing YouTube audio stream...', 'bot');
-    }
-
     function playYouTubeInPlayer(youtubeUrl) {
         // Remove any existing player
         let existing = document.getElementById('youtube-player');
