@@ -136,22 +136,17 @@ document.addEventListener('DOMContentLoaded', () => {
             shouldListen = false;
             console.log("MIC MANUALLY TURNED OFF BY USER");
             
-            // Call stopListening to properly stop mic and update UI
-            if (typeof stopListening === 'function') {
-                stopListening();
-            } else {
-                // Fallback if stopListening not defined
-                voiceWave.classList.remove('active');
-                micButton.classList.remove('active');
-                micStatus.textContent = "Microphone ready";
-                if (recognition) {
-                    try {
-                        recognition.stop();
-                    } catch (e) {
-                        console.error("Error stopping recognition:", e);
-                    }
+            // Properly stop recognition and update UI
+            if (recognition) {
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.error("Error stopping recognition:", e);
                 }
             }
+            voiceWave.classList.remove('active');
+            micButton.classList.remove('active');
+            micStatus.textContent = "Microphone ready";
             return; // Exit early
         }
         
