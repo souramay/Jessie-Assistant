@@ -395,6 +395,51 @@ document.addEventListener('DOMContentLoaded', () => {
     document.head.appendChild(style);
 
     // YouTube functions
+    let isYouTubePlaying = false;
+    let micWasActiveBeforeYouTube = false;
+
+    function stopMic() {
+        if (shouldListen) {
+            shouldListen = false;
+            micWasActiveBeforeYouTube = true;
+            if (recognition) {
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.error("Error stopping recognition:", e);
+                }
+            }
+            const micButton = document.getElementById('mic-button');
+            const voiceWave = document.getElementById('voice-wave');
+            const micStatus = document.getElementById('mic-status');
+            if (micButton) micButton.classList.remove('active');
+            if (voiceWave) voiceWave.classList.remove('active');
+            if (micStatus) micStatus.textContent = "Microphone paused due to YouTube playback";
+            console.log("Mic stopped because YouTube started playing");
+        }
+    }
+
+    function resumeMic() {
+        if (micWasActiveBeforeYouTube) {
+            micWasActiveBeforeYouTube = false;
+            if (recognition) {
+                try {
+                    recognition.start();
+                    shouldListen = true;
+                    const micButton = document.getElementById('mic-button');
+                    const voiceWave = document.getElementById('voice-wave');
+                    const micStatus = document.getElementById('mic-status');
+                    if (micButton) micButton.classList.add('active');
+                    if (voiceWave) voiceWave.classList.add('active');
+                    if (micStatus) micStatus.textContent = "Listening...";
+                    console.log("Mic resumed after YouTube stopped");
+                } catch (e) {
+                    console.error("Error resuming recognition:", e);
+                }
+            }
+        }
+    }
+
     function playYouTubeStream(youtubeUrl) {
         const audio = new Audio(`/api/stream_youtube_audio?url=${encodeURIComponent(youtubeUrl)}`);
         audio.play().catch(e => console.error('Error playing YouTube stream:', e));
@@ -428,6 +473,29 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         document.querySelector('.dynamic-text-panel').appendChild(playerDiv);
         addMessage('Playing YouTube video in browser.', 'bot');
+
+        // Set flag and stop mic
+        isYouTubePlaying = true;
+        stopMic();
+
+        // Listen for iframe removal or stop event to resume mic
+        const iframe = document.getElementById('youtube-player').querySelector('iframe');
+        if (iframe) {
+            // Since we cannot directly detect YouTube iframe events easily,
+            // add a MutationObserver to detect removal of the playerDiv
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach(mutation => {
+                    mutation.removedNodes.forEach(removed => {
+                        if (removed.id === 'youtube-player') {
+                            isYouTubePlaying = false;
+                            resumeMic();
+                            observer.disconnect();
+                        }
+                    });
+                });
+            });
+            observer.observe(document.querySelector('.dynamic-text-panel'), { childList: true });
+        }
     }
 
     // Improved auto-start microphone function
@@ -435,6 +503,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Auto-starting microphone...");
         
         // Force the active state immediately
+        const micButton = document.getElementById('mic-button');
+        const micStatus = document.getElementById('mic-status');
+        const voiceWave = document.getElementById('voice-wave');
         micButton.classList.add('active');
         micStatus.textContent = "Starting...";
         voiceWave.classList.add('active');
